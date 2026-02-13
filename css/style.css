@@ -410,12 +410,13 @@ body {
 
 .error-banner {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  max-width: 600px;
-  width: calc(100% - 2rem);
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   z-index: 100;
+  background-color: rgba(0, 0, 0, 0.55);
+  padding: 1rem;
 }
 
 .error-banner[hidden] {
@@ -423,6 +424,8 @@ body {
 }
 
 .error-banner__inner {
+  width: 100%;
+  max-width: 560px;
   background-color: #3d1a20;
   border: 1px solid var(--color-error);
   border-radius: var(--radius-md);
