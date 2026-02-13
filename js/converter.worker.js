@@ -34,7 +34,8 @@ async function initialize() {
     //   pandas:             xlsx 轉換（XlsxConverter）
     //   lxml:               pptx 轉換（python-pptx 依賴）
     //   pillow:             pptx 轉換（python-pptx 依賴）
-    await pyodide.loadPackage(['micropip', 'charset-normalizer', 'pandas', 'lxml', 'pillow']);
+    //   cryptography:       pdf 轉換（pdfminer.six 依賴，會自動帶入 cffi）
+    await pyodide.loadPackage(['micropip', 'charset-normalizer', 'pandas', 'lxml', 'pillow', 'cryptography']);
 
     sendProgress('正在讀取套件清單...');
     const response = await fetch('/wheels/manifest.json');
