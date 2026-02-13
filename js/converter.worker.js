@@ -135,26 +135,8 @@ with open(_tmp_path, "wb") as f:
 
 # 執行轉換
 try:
-    _fence = chr(96) * 3  # 三個反引號（不可直接寫，否則截斷 JS template literal）
-    _nl = chr(10)         # 換行字元（避免 JS template literal 展開 escape sequence）
-    if _ext == '.json':
-        # markitdown 對 JSON 只回傳裸文字，自行包成 code block
-        with open(_tmp_path, 'r', encoding='utf-8', errors='replace') as _f:
-            _raw = _f.read()
-        _markdown = _fence + "json" + _nl + _raw + _nl + _fence
-    elif _ext == '.xml':
-        # 先嘗試 markitdown（RSS/Atom feed 轉換效果好）
-        # 若失敗（一般 XML 不被接受），fallback 成 code block
-        try:
-            _result = _md.convert(_tmp_path)
-            _markdown = _result.text_content or ""
-        except Exception:
-            with open(_tmp_path, 'r', encoding='utf-8', errors='replace') as _f:
-                _raw = _f.read()
-            _markdown = _fence + "xml" + _nl + _raw + _nl + _fence
-    else:
-        _result = _md.convert(_tmp_path)
-        _markdown = _result.text_content
+    _result = _md.convert(_tmp_path)
+    _markdown = _result.text_content
 finally:
     try:
         os.unlink(_tmp_path)

@@ -97,7 +97,7 @@ function setEngineStatus(state, text) {
 
 const SUPPORTED_EXTENSIONS = new Set([
   'pdf', 'docx', 'xlsx', 'pptx',
-  'html', 'htm', 'csv', 'json', 'xml', 'epub',
+  'html', 'htm', 'csv', 'epub',
 ]);
 
 /** 驗證副檔名是否支援 */
