@@ -136,7 +136,7 @@ with open(_tmp_path, "wb") as f:
 # 執行轉換
 try:
     _fence = chr(96) * 3  # 三個反引號（不可直接寫，否則截斷 JS template literal）
-    _nl = chr(10)         # 換行字元（不可寫 \n，JS template literal 會展開為真實換行）
+    _nl = chr(10)         # 換行字元（避免 JS template literal 展開 escape sequence）
     if _ext == '.json':
         # markitdown 對 JSON 只回傳裸文字，自行包成 code block
         with open(_tmp_path, 'r', encoding='utf-8', errors='replace') as _f:
