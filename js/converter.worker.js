@@ -29,8 +29,12 @@ async function initialize() {
     });
 
     sendProgress('正在載入套件管理器...');
-    // charset-normalizer 是 Pyodide 內建套件，markitdown 需要它做文字編碼偵測
-    await pyodide.loadPackage(['micropip', 'charset-normalizer']);
+    // 從 Pyodide 內建套件載入所有平台相依但有 WASM 版的套件：
+    //   charset-normalizer: markitdown 文字編碼偵測
+    //   pandas:             xlsx 轉換（XlsxConverter）
+    //   lxml:               pptx 轉換（python-pptx 依賴）
+    //   pillow:             pptx 轉換（python-pptx 依賴）
+    await pyodide.loadPackage(['micropip', 'charset-normalizer', 'pandas', 'lxml', 'pillow']);
 
     sendProgress('正在讀取套件清單...');
     const response = await fetch('/wheels/manifest.json');
