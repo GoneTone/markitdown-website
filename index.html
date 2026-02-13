@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MarkItDown — 文件轉 Markdown</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+  <!-- 頁首 -->
+  <header class="site-header">
+    <div class="header-inner">
+      <h1 class="site-title">MarkItDown</h1>
+      <p class="site-subtitle">在瀏覽器中將文件轉換為 Markdown</p>
+    </div>
+    <!-- 引擎狀態指示器 -->
+    <div id="engine-status" class="engine-status engine-status--loading" aria-live="polite">
+      <span class="status-dot"></span>
+      <span id="engine-status-text">正在載入轉換引擎...</span>
+    </div>
+  </header>
+
+  <!-- 主要內容區域 -->
+  <main class="main-content">
+
+    <!-- 狀態一：初始上傳區域 -->
+    <section id="state-upload" class="state-section state-section--active">
+      <div
+        id="drop-zone"
+        class="drop-zone"
+        role="button"
+        tabindex="0"
+        aria-label="上傳文件，點擊或拖放至此區域"
+      >
+        <div class="drop-zone__icon" aria-hidden="true">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <p class="drop-zone__title">拖放文件至此</p>
+        <p class="drop-zone__subtitle">或點擊選擇檔案</p>
+        <input
+          type="file"
+          id="file-input"
+          class="file-input"
+          accept=".pdf,.docx,.xlsx,.pptx,.html,.htm,.csv,.json,.xml,.epub"
+          aria-hidden="true"
+          tabindex="-1"
+        />
+      </div>
+
+      <div class="supported-formats">
+        <p class="supported-formats__label">支援格式：</p>
+        <div class="supported-formats__list">
+          <span class="format-badge">PDF</span>
+          <span class="format-badge">DOCX</span>
+          <span class="format-badge">XLSX</span>
+          <span class="format-badge">PPTX</span>
+          <span class="format-badge">HTML</span>
+          <span class="format-badge">CSV</span>
+          <span class="format-badge">JSON</span>
+          <span class="format-badge">XML</span>
+          <span class="format-badge">EPUB</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 狀態二：轉換中 -->
+    <section id="state-converting" class="state-section" aria-live="polite">
+      <div class="converting-container">
+        <div class="spinner" aria-hidden="true"></div>
+        <p id="converting-message" class="converting-message">準備中...</p>
+      </div>
+    </section>
+
+    <!-- 狀態三：轉換完成 -->
+    <section id="state-result" class="state-section">
+      <div class="result-container">
+        <div class="result-header">
+          <div class="result-meta">
+            <span id="result-filename" class="result-filename"></span>
+            <span id="result-stats" class="result-stats"></span>
+          </div>
+          <div class="result-actions">
+            <button id="btn-download" class="btn btn--primary" type="button">
+              下載 .md 檔案
+            </button>
+            <button id="btn-reset" class="btn btn--secondary" type="button">
+              重新轉換
+            </button>
+          </div>
+        </div>
+        <pre id="result-preview" class="result-preview"><code id="result-code"></code></pre>
+      </div>
+    </section>
+
+    <!-- 錯誤提示 -->
+    <div id="error-banner" class="error-banner" role="alert" aria-live="assertive" hidden>
+      <div class="error-banner__inner">
+        <strong>轉換失敗</strong>
+        <p id="error-message"></p>
+        <button id="btn-error-dismiss" class="btn btn--small" type="button">關閉</button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- 頁尾 -->
+  <footer class="site-footer">
+    <p>所有文件處理完全在您的瀏覽器中進行，不會上傳至任何伺服器。</p>
+    <p>由 <a href="https://github.com/microsoft/markitdown" target="_blank" rel="noopener">Microsoft MarkItDown</a> 提供轉換功能。</p>
+  </footer>
+
+  <script src="/js/main.js"></script>
+</body>
+</html>
