@@ -61,6 +61,7 @@ function createWorker() {
         isEngineReady = true;
         setEngineStatus('ready', '就緒');
         dropZone.classList.remove('drop-zone--disabled');
+        document.getElementById('upload-engine-status').hidden = true;
         break;
 
       case 'progress':
@@ -81,6 +82,7 @@ function createWorker() {
   worker.onerror = (err) => {
     showError(`Worker 發生錯誤：${err.message}`);
     setEngineStatus('error', '引擎錯誤');
+    document.getElementById('upload-engine-status').hidden = true;
     showState(STATES.UPLOAD);
   };
 }
