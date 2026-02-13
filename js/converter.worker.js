@@ -126,7 +126,7 @@ _ext = os.path.splitext(_filename)[1].lower()
 # 寫入 Pyodide 虛擬檔案系統的暫存檔
 _tmp_path = f"/tmp/upload{_ext}"
 with open(_tmp_path, "wb") as f:
-    f.write(bytes(_file_bytes.tolist()))
+    f.write(_file_bytes.to_py())
 
 # 執行轉換
 try:
