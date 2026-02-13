@@ -350,8 +350,8 @@ body {
 
 /* 捲軸樣式 */
 .result-preview::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 10px;
+  height: 10px;
 }
 .result-preview::-webkit-scrollbar-track {
   background: var(--color-bg);
