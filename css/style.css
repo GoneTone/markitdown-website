@@ -207,7 +207,7 @@ body {
   position: absolute;
   inset: 0;
   opacity: 0;
-  cursor: pointer;
+  pointer-events: none;
 }
 
 /* 支援格式標籤 */
