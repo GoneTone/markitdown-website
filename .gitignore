@@ -1,0 +1,18 @@
+# Pyodide runtime（由建置腳本下載，不提交至 git）
+pyodide/
+
+# Python wheels（由建置腳本下載，不提交至 git）
+wheels/
+
+# Python 快取
+__pycache__/
+*.pyc
+*.pyo
+
+# 建置腳本暫存
+scripts/_tmp/
+scripts/*.tar.bz2
+
+# 系統檔案
+.DS_Store
+Thumbs.db
