@@ -310,6 +310,7 @@ body {
   border-radius: var(--radius-md);
   padding: 1.5rem;
   max-height: 60vh;
+  overflow-x: auto;
   overflow-y: auto;
   box-shadow: var(--shadow-sm);
 }
@@ -319,8 +320,7 @@ body {
   font-size: 0.85rem;
   line-height: 1.7;
   color: var(--color-text);
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: pre;
 }
 
 /* 捲軸樣式 */
