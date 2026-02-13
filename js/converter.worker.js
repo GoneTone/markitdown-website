@@ -29,8 +29,8 @@ async function initialize() {
     });
 
     sendProgress('正在載入套件管理器...');
-    await pyodide.loadPackage('micropip');
-    const micropip = pyodide.pyimport('micropip');
+    // charset-normalizer 是 Pyodide 內建套件，markitdown 需要它做文字編碼偵測
+    await pyodide.loadPackage(['micropip', 'charset-normalizer']);
 
     sendProgress('正在讀取套件清單...');
     const response = await fetch('/wheels/manifest.json');
@@ -44,17 +44,48 @@ async function initialize() {
     }
 
     sendProgress(`正在安裝 ${manifest.length} 個套件...`);
-    const wheelUrls = manifest.map(filename => `/wheels/${filename}`);
-
-    // 安裝所有套件（micropip 會自動處理依賴順序）
-    await micropip.install(wheelUrls);
+    // 用 Python 執行安裝，加上 deps=False 跳過 PyPI 依賴解析。
+    // markitdown 依賴 magika（平台相依，無 WASM 版），故以下注入 stub 取代。
+    const wheelUrlList = manifest.map(f => `"/wheels/${f}"`).join(', ');
+    await pyodide.runPythonAsync(`
+import micropip
+await micropip.install([${wheelUrlList}], deps=False)
+    `);
 
     sendProgress('正在初始化 MarkItDown...');
-    // 預先 import 以確認安裝成功
     await pyodide.runPythonAsync(`
-import io
-import os
-import tempfile
+import sys, types, io, os
+
+# magika 是 markitdown 的 hard import，但無純 Python / WASM 版本。
+# 我們的使用場景永遠提供明確副檔名，不需要 content sniffing，
+# 故注入一個 stub：identify_stream 回傳 status != "ok"，
+# markitdown 會直接走「以副檔名推斷」的安全路徑。
+_magika_mod = types.ModuleType('magika')
+
+class _MagikaOutput:
+    label = 'unknown'
+    is_text = False
+    extensions = []
+    mime_type = 'application/octet-stream'
+
+class _MagikaPrediction:
+    output = _MagikaOutput()
+
+class _MagikaResult:
+    status = 'error'  # 非 "ok"，markitdown 使用 base_guess（副檔名推斷）
+    prediction = _MagikaPrediction()
+
+class Magika:
+    def identify_stream(self, stream):
+        return _MagikaResult()
+    def identify_bytes(self, data):
+        return _MagikaResult()
+    def identify_path(self, path):
+        return _MagikaResult()
+
+_magika_mod.Magika = Magika
+sys.modules['magika'] = _magika_mod
+
 from markitdown import MarkItDown
 
 # 建立 MarkItDown 實例（關閉所有需要外部 API 的功能）
