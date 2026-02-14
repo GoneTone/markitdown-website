@@ -247,10 +247,18 @@ async function downloadAllZip() {
   });
 
   const blob = await zip.generateAsync({ type: 'blob' });
+  const now = new Date();
+  const ts = now.getFullYear().toString()
+    + String(now.getMonth() + 1).padStart(2, '0')
+    + String(now.getDate()).padStart(2, '0')
+    + '-'
+    + String(now.getHours()).padStart(2, '0')
+    + String(now.getMinutes()).padStart(2, '0')
+    + String(now.getSeconds()).padStart(2, '0');
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'converted.zip';
+  a.download = `markitdown-${ts}.zip`;
   a.click();
   URL.revokeObjectURL(url);
 }
