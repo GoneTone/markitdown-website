@@ -3,9 +3,10 @@
  *
  * 職責：
  * - 管理 Web Worker 的生命週期
- * - 處理拖放與檔案選擇
- * - 控制三種 UI 狀態（上傳 / 轉換中 / 完成）
- * - 觸發 Markdown 檔案下載
+ * - 處理拖放與多檔案選擇
+ * - 控制 UI 狀態（上傳 / 清單）
+ * - 管理轉換佇列（依序轉換）
+ * - 觸發 Markdown 檔案下載與 ZIP 打包
  */
 
 // ── DOM 元素 ──────────────────────────────────────────────────────────────
@@ -14,33 +15,30 @@ const engineStatus      = document.getElementById('engine-status');
 const engineStatusText  = document.getElementById('engine-status-text');
 const dropZone          = document.getElementById('drop-zone');
 const fileInput         = document.getElementById('file-input');
-const convertingMsg     = document.getElementById('converting-message');
-const resultFilename    = document.getElementById('result-filename');
-const resultStats       = document.getElementById('result-stats');
-const resultCode        = document.getElementById('result-code');
-const btnDownload       = document.getElementById('btn-download');
-const btnReset          = document.getElementById('btn-reset');
 const errorBanner       = document.getElementById('error-banner');
 const errorMessage      = document.getElementById('error-message');
 const btnErrorDismiss   = document.getElementById('btn-error-dismiss');
 const engineProgressBar = document.getElementById('engine-progress-bar');
 const engineProgressText = document.getElementById('engine-progress-text');
+const fileList           = document.getElementById('file-list');
+const listProgressText   = document.getElementById('list-progress-text');
+const btnUploadMore      = document.getElementById('btn-upload-more');
+const btnDownloadZip     = document.getElementById('btn-download-zip');
 
 // ── 狀態管理 ──────────────────────────────────────────────────────────────
 
 const STATES = {
-  UPLOAD:     'state-upload',
-  CONVERTING: 'state-converting',
-  RESULT:     'state-result',
+  UPLOAD: 'state-upload',
+  LIST:   'state-list',
 };
 
-/** 切換 UI 狀態（只顯示對應的 section） */
+let currentState = STATES.UPLOAD;
+
 function showState(stateName) {
+  currentState = stateName;
   Object.values(STATES).forEach(id => {
     const el = document.getElementById(id);
-    if (el) {
-      el.classList.toggle('state-section--active', id === stateName);
-    }
+    if (el) el.classList.toggle('state-section--active', id === stateName);
   });
 }
 
@@ -48,9 +46,8 @@ function showState(stateName) {
 
 let worker = null;
 let isEngineReady = false;
-let currentFilename = '';
-let currentMarkdown = '';
-let convertStartTime = 0;
+let fileQueue    = [];   // FileItem[]
+let currentIndex = -1;  // 目前正在轉換的索引
 
 function createWorker() {
   worker = new Worker('/js/converter.worker.js');
@@ -243,15 +240,6 @@ fileInput.addEventListener('change', () => {
 });
 
 // ── 按鈕事件 ──────────────────────────────────────────────────────────────
-
-btnDownload.addEventListener('click', downloadMarkdown);
-
-btnReset.addEventListener('click', () => {
-  currentMarkdown = '';
-  currentFilename = '';
-  resultCode.textContent = '';
-  showState(STATES.UPLOAD);
-});
 
 btnErrorDismiss.addEventListener('click', dismissError);
 
