@@ -258,7 +258,7 @@ async function downloadAllZip() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `markitdown-${ts}.zip`;
+  a.download = `markitdown_${ts}.zip`;
   a.click();
   URL.revokeObjectURL(url);
 }
