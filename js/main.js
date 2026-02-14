@@ -22,8 +22,10 @@ const engineProgressBar = document.getElementById('engine-progress-bar');
 const engineProgressText = document.getElementById('engine-progress-text');
 const fileList           = document.getElementById('file-list');
 const listProgressText   = document.getElementById('list-progress-text');
-const btnUploadMore      = document.getElementById('btn-upload-more');
-const btnDownloadZip     = document.getElementById('btn-download-zip');
+const btnUploadMore         = document.getElementById('btn-upload-more');
+const btnDownloadZip        = document.getElementById('btn-download-zip');
+const btnUploadMoreFooter   = document.getElementById('btn-upload-more-footer');
+const btnDownloadZipFooter  = document.getElementById('btn-download-zip-footer');
 
 // ── 狀態管理 ──────────────────────────────────────────────────────────────
 
@@ -336,7 +338,9 @@ function updateListHeader() {
   const isProcessing = fileQueue.some(i => i.status === 'converting' || i.status === 'waiting');
   const failedNote = failed > 0 ? `（${failed} 個失敗）` : '';
   listProgressText.textContent = `${done} / ${total} 完成${failedNote}`;
-  btnDownloadZip.disabled = done === 0 || isProcessing;
+  const zipDisabled = done === 0 || isProcessing;
+  btnDownloadZip.disabled = zipDisabled;
+  btnDownloadZipFooter.disabled = zipDisabled;
 }
 
 function renderFileList() {
@@ -457,6 +461,7 @@ fileInput.addEventListener('change', () => {
 
 btnErrorDismiss.addEventListener('click', dismissError);
 btnUploadMore.addEventListener('click', () => fileInput.click());
+btnUploadMoreFooter.addEventListener('click', () => fileInput.click());
 
 // 清單項目互動（下載、預覽切換）
 fileList.addEventListener('click', (e) => {
@@ -474,6 +479,7 @@ fileList.addEventListener('click', (e) => {
 });
 
 btnDownloadZip.addEventListener('click', downloadAllZip);
+btnDownloadZipFooter.addEventListener('click', downloadAllZip);
 
 // ── 初始化 ────────────────────────────────────────────────────────────────
 

@@ -463,6 +463,15 @@ body {
   flex-shrink: 0;
 }
 
+.list-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--color-border);
+}
+
 #list-progress-text {
   font-size: 0.9rem;
   color: var(--color-muted);
