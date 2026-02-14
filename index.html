@@ -68,6 +68,7 @@
           id="file-input"
           class="file-input"
           accept=".pdf,.docx,.xlsx,.pptx,.html,.htm,.csv,.epub"
+          multiple
           aria-hidden="true"
           tabindex="-1"
         />
@@ -94,32 +95,20 @@
       </div>
     </section>
 
-    <!-- 狀態二：轉換中 -->
-    <section id="state-converting" class="state-section" aria-live="polite">
-      <div class="converting-container">
-        <div class="spinner" aria-hidden="true"></div>
-        <p id="converting-message" class="converting-message">準備中...</p>
-      </div>
-    </section>
+    <!-- 狀態二：轉換清單 -->
+    <section id="state-list" class="state-section">
+      <div class="list-container">
 
-    <!-- 狀態三：轉換完成 -->
-    <section id="state-result" class="state-section">
-      <div class="result-container">
-        <div class="result-header">
-          <div class="result-meta">
-            <span id="result-filename" class="result-filename"></span>
-            <span id="result-stats" class="result-stats"></span>
-          </div>
-          <div class="result-actions">
-            <button id="btn-download" class="btn btn--primary" type="button">
-              下載 .md 檔案
-            </button>
-            <button id="btn-reset" class="btn btn--secondary" type="button">
-              重新轉換
-            </button>
+        <div class="list-header">
+          <span id="list-progress-text"></span>
+          <div class="list-header__actions">
+            <button id="btn-upload-more" class="btn btn--secondary" type="button">繼續上傳</button>
+            <button id="btn-download-zip" class="btn btn--primary" type="button" disabled>全部下載 ZIP</button>
           </div>
         </div>
-        <pre id="result-preview" class="result-preview"><code id="result-code"></code></pre>
+
+        <ul id="file-list" class="file-list" aria-live="polite"></ul>
+
       </div>
     </section>
 
@@ -142,6 +131,7 @@
     <p>❤️使用 <a href="https://github.com/anthropics/claude-code" target="_blank" rel="noopener">Claude Code</a> 開發❤️</p>
   </footer>
 
+  <script src="/js/lib/jszip.min.js"></script>
   <script src="/js/main.js"></script>
 </body>
 </html>
