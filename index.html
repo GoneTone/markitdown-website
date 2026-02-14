@@ -49,7 +49,7 @@
     <section id="state-upload" class="state-section state-section--active">
       <div
         id="drop-zone"
-        class="drop-zone"
+        class="drop-zone drop-zone--disabled"
         role="button"
         tabindex="0"
         aria-label="上傳文件，點擊或拖放至此區域"
@@ -74,8 +74,10 @@
       </div>
 
       <div id="upload-engine-status" class="upload-engine-status">
-        <div class="spinner-small" aria-hidden="true"></div>
-        <span>正在載入轉換引擎，請稍候...</span>
+        <div class="engine-progress__track" aria-hidden="true">
+          <div id="engine-progress-bar" class="engine-progress__fill"></div>
+        </div>
+        <span id="engine-progress-text">正在載入轉換引擎，請稍候...</span>
       </div>
 
       <div class="supported-formats">

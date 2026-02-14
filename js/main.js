@@ -10,19 +10,21 @@
 
 // ── DOM 元素 ──────────────────────────────────────────────────────────────
 
-const engineStatus     = document.getElementById('engine-status');
-const engineStatusText = document.getElementById('engine-status-text');
-const dropZone         = document.getElementById('drop-zone');
-const fileInput        = document.getElementById('file-input');
-const convertingMsg    = document.getElementById('converting-message');
-const resultFilename   = document.getElementById('result-filename');
-const resultStats      = document.getElementById('result-stats');
-const resultCode       = document.getElementById('result-code');
-const btnDownload      = document.getElementById('btn-download');
-const btnReset         = document.getElementById('btn-reset');
-const errorBanner      = document.getElementById('error-banner');
-const errorMessage     = document.getElementById('error-message');
-const btnErrorDismiss  = document.getElementById('btn-error-dismiss');
+const engineStatus      = document.getElementById('engine-status');
+const engineStatusText  = document.getElementById('engine-status-text');
+const dropZone          = document.getElementById('drop-zone');
+const fileInput         = document.getElementById('file-input');
+const convertingMsg     = document.getElementById('converting-message');
+const resultFilename    = document.getElementById('result-filename');
+const resultStats       = document.getElementById('result-stats');
+const resultCode        = document.getElementById('result-code');
+const btnDownload       = document.getElementById('btn-download');
+const btnReset          = document.getElementById('btn-reset');
+const errorBanner       = document.getElementById('error-banner');
+const errorMessage      = document.getElementById('error-message');
+const btnErrorDismiss   = document.getElementById('btn-error-dismiss');
+const engineProgressBar = document.getElementById('engine-progress-bar');
+const engineProgressText = document.getElementById('engine-progress-text');
 
 // ── 狀態管理 ──────────────────────────────────────────────────────────────
 
@@ -54,18 +56,27 @@ function createWorker() {
   worker = new Worker('/js/converter.worker.js');
 
   worker.onmessage = (event) => {
-    const { type, message, markdown } = event.data;
+    const { type, message, markdown, percent } = event.data;
 
     switch (type) {
       case 'ready':
         isEngineReady = true;
         setEngineStatus('ready', '就緒');
-        dropZone.classList.remove('drop-zone--disabled');
-        document.getElementById('upload-engine-status').hidden = true;
+        // 等進度條 100% 的 transition（0.5s）播完後，同步顯示文件框並隱藏進度條
+        setTimeout(() => {
+          dropZone.classList.remove('drop-zone--disabled');
+          document.getElementById('upload-engine-status').hidden = true;
+        }, 600);
         break;
 
       case 'progress':
         convertingMsg.textContent = message;
+        if (!isEngineReady) {
+          if (engineProgressText) engineProgressText.textContent = message;
+          if (engineProgressBar && typeof percent === 'number') {
+            engineProgressBar.style.width = `${percent}%`;
+          }
+        }
         break;
 
       case 'result':
@@ -245,9 +256,6 @@ btnReset.addEventListener('click', () => {
 btnErrorDismiss.addEventListener('click', dismissError);
 
 // ── 初始化 ────────────────────────────────────────────────────────────────
-
-// 在 Pyodide 就緒前禁用上傳
-dropZone.classList.add('drop-zone--disabled');
 
 // 啟動 Web Worker
 createWorker();

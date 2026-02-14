@@ -165,7 +165,7 @@ body {
   padding: 4rem 2rem;
   text-align: center;
   cursor: pointer;
-  transition: border-color 0.2s, background-color 0.2s, transform 0.1s;
+  transition: border-color 0.2s, background-color 0.2s, transform 0.1s, opacity 0.4s ease;
   background-color: var(--color-surface);
   position: relative;
   user-select: none;
@@ -219,8 +219,8 @@ body {
 /* 上傳區載入中提示 */
 .upload-engine-status {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 0.5rem;
   margin-top: 1.25rem;
   font-size: 0.85rem;
@@ -231,14 +231,29 @@ body {
   display: none;
 }
 
-.spinner-small {
-  width: 14px;
-  height: 14px;
-  border: 2px solid var(--color-border);
-  border-top-color: #f0a500;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  flex-shrink: 0;
+/* 引擎載入進度條 */
+.engine-progress__track {
+  width: 280px;
+  max-width: 100%;
+  height: 4px;
+  background-color: var(--color-border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.engine-progress__fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #c87800 0%, #f0a500 50%, #c87800 100%);
+  background-size: 200% 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+  animation: engine-shimmer 1.5s linear infinite;
+}
+
+@keyframes engine-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 /* 支援格式標籤 */

@@ -15,29 +15,38 @@ importScripts('/pyodide/pyodide.js');
 let pyodide = null;
 let isReady = false;
 
-/** 傳送進度訊息至主執行緒 */
-function sendProgress(message) {
-  self.postMessage({ type: 'progress', message });
+/** 傳送進度訊息至主執行緒，percent 為可選的 0-100 整數 */
+function sendProgress(message, percent) {
+  self.postMessage({ type: 'progress', message, percent });
 }
 
 /** 初始化 Pyodide 並安裝所有套件 */
 async function initialize() {
   try {
-    sendProgress('正在載入 Python 執行環境...');
+    sendProgress('正在載入 Python 執行環境...', 5);
     pyodide = await loadPyodide({
       indexURL: '/pyodide/',
     });
 
-    sendProgress('正在載入套件管理器...');
+    sendProgress('正在載入內建套件...', 40);
     // 從 Pyodide 內建套件載入所有平台相依但有 WASM 版的套件：
     //   charset-normalizer: markitdown 文字編碼偵測
     //   pandas:             xlsx 轉換（XlsxConverter）
     //   lxml:               pptx 轉換（python-pptx 依賴）
     //   pillow:             pptx 轉換（python-pptx 依賴）
     //   cryptography:       pdf 轉換（pdfminer.six 依賴，會自動帶入 cffi）
-    await pyodide.loadPackage(['micropip', 'charset-normalizer', 'pandas', 'lxml', 'pillow', 'cryptography']);
+    let pkgPct = 40;
+    await pyodide.loadPackage(['micropip', 'charset-normalizer', 'pandas', 'lxml', 'pillow', 'cryptography'], {
+      messageCallback: (msg) => {
+        if (msg.startsWith('Loading ')) {
+          pkgPct = Math.min(pkgPct + 3, 58);
+          const name = msg.replace('Loading ', '').split(' ')[0];
+          sendProgress(`正在載入 ${name}...`, pkgPct);
+        }
+      },
+    });
 
-    sendProgress('正在讀取套件清單...');
+    sendProgress('正在讀取套件清單...', 62);
     const response = await fetch('/wheels/manifest.json');
     if (!response.ok) {
       throw new Error(`無法讀取套件清單：${response.status} ${response.statusText}`);
@@ -48,7 +57,7 @@ async function initialize() {
       throw new Error('wheels/manifest.json 為空，請重新執行建置腳本');
     }
 
-    sendProgress(`正在安裝 ${manifest.length} 個套件...`);
+    sendProgress(`正在安裝 ${manifest.length} 個套件...`, 65);
     // 用 Python 執行安裝，加上 deps=False 跳過 PyPI 依賴解析。
     // markitdown 依賴 magika（平台相依，無 WASM 版），故以下注入 stub 取代。
     const wheelUrlList = manifest.map(f => `"/wheels/${f}"`).join(', ');
@@ -57,7 +66,7 @@ import micropip
 await micropip.install([${wheelUrlList}], deps=False)
     `);
 
-    sendProgress('正在初始化 MarkItDown...');
+    sendProgress('正在初始化 MarkItDown...', 90);
     await pyodide.runPythonAsync(`
 import sys, types, io, os
 
@@ -98,6 +107,7 @@ _md = MarkItDown(enable_plugins=False)
 print("MarkItDown 初始化成功")
     `);
 
+    sendProgress('載入完成', 100);
     isReady = true;
     self.postMessage({ type: 'ready' });
 

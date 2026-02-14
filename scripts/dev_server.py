@@ -9,6 +9,9 @@ class COOPHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Cross-Origin-Opener-Policy', 'same-origin')
         self.send_header('Cross-Origin-Embedder-Policy', 'require-corp')
         self.send_header('Cross-Origin-Resource-Policy', 'same-origin')
+        # 開發模式：JS/CSS/HTML 不快取，確保修改立即生效（包含 Web Worker）
+        if any(self.path.endswith(ext) for ext in ('.js', '.css', '.html')):
+            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
         super().end_headers()
 
     def log_message(self, format, *args):
