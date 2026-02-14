@@ -303,9 +303,10 @@ function updateListHeader() {
   const done   = fileQueue.filter(i => i.status === 'done').length;
   const failed = fileQueue.filter(i => i.status === 'error').length;
 
+  const isProcessing = fileQueue.some(i => i.status === 'converting' || i.status === 'waiting');
   const failedNote = failed > 0 ? `（${failed} 個失敗）` : '';
   listProgressText.textContent = `${done} / ${total} 完成${failedNote}`;
-  btnDownloadZip.disabled = done === 0;
+  btnDownloadZip.disabled = done === 0 || isProcessing;
 }
 
 function renderFileList() {
