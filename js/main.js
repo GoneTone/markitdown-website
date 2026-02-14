@@ -170,6 +170,20 @@ function handleFiles(files) {
   processNextFile();
 }
 
+/**
+ * 追加新檔案至現有佇列，並在閒置時繼續轉換。
+ * @param {FileList|File[]} files
+ */
+function appendFiles(files) {
+  const newItems = Array.from(files).map(createFileItem);
+  fileQueue.push(...newItems);
+  newItems.forEach(item => fileList.appendChild(createFileItemEl(item)));
+  updateListHeader();
+
+  const isIdle = !fileQueue.some(i => i.status === 'converting');
+  if (isIdle) processNextFile();
+}
+
 // ── 下載功能 ──────────────────────────────────────────────────────────────
 
 /**
@@ -387,6 +401,7 @@ fileInput.addEventListener('change', () => {
 // ── 按鈕事件 ──────────────────────────────────────────────────────────────
 
 btnErrorDismiss.addEventListener('click', dismissError);
+btnUploadMore.addEventListener('click', () => fileInput.click());
 
 // 清單項目互動（下載、預覽切換）
 fileList.addEventListener('click', (e) => {
