@@ -1,6 +1,12 @@
 # MarkItDown Website
 
+[![GitHub](https://img.shields.io/badge/GitHub-GoneTone%2Fmarkitdown--website-181717?logo=github)](https://github.com/GoneTone/markitdown-website)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Docker Hub](https://img.shields.io/badge/Docker%20Hub-gonetone%2Fmarkitdown--website-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/gonetone/markitdown-website)
+
 在瀏覽器中將文件轉換為 Markdown，**所有處理完全在本機端進行，不會上傳任何資料至伺服器**。
+
+本專案以 MIT License 開源於 [GitHub](https://github.com/GoneTone/markitdown-website)，歡迎提交 Issue 或 Pull Request。
 
 由 [Microsoft MarkItDown](https://github.com/microsoft/markitdown) 提供轉換核心，透過 [Pyodide](https://pyodide.org/)（Python WebAssembly）在瀏覽器中直接執行 Python。
 
