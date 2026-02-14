@@ -565,8 +565,7 @@ body {
   font-size: 0.78rem;
   line-height: 1.5;
   margin: 0;
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: pre;
 }
 
 /* 清單項目 converting 狀態小 spinner */
