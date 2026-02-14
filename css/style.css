@@ -64,7 +64,7 @@ body {
 
 .header-inner {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 1rem;
   flex-wrap: wrap;
 }
