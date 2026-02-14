@@ -430,6 +430,12 @@ body {
   padding: 2rem 0;
 }
 
+.list-container--dragging {
+  outline: 2px dashed var(--color-highlight);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+}
+
 .list-header {
   display: flex;
   align-items: center;

@@ -24,6 +24,7 @@ const fileList           = document.getElementById('file-list');
 const listProgressText   = document.getElementById('list-progress-text');
 const btnUploadMore      = document.getElementById('btn-upload-more');
 const btnDownloadZip     = document.getElementById('btn-download-zip');
+const listContainer      = document.querySelector('#state-list .list-container');
 
 // ── 狀態管理 ──────────────────────────────────────────────────────────────
 
@@ -387,6 +388,26 @@ dropZone.addEventListener('keydown', (e) => {
       fileInput.click();
     }
   }
+});
+
+// ── 清單拖放事件 ───────────────────────────────────────────────────────────
+
+listContainer.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  listContainer.classList.add('list-container--dragging');
+});
+
+listContainer.addEventListener('dragleave', (e) => {
+  if (!listContainer.contains(e.relatedTarget)) {
+    listContainer.classList.remove('list-container--dragging');
+  }
+});
+
+listContainer.addEventListener('drop', (e) => {
+  e.preventDefault();
+  listContainer.classList.remove('list-container--dragging');
+  const files = e.dataTransfer?.files;
+  if (files?.length) appendFiles(files);
 });
 
 fileInput.addEventListener('change', () => {
