@@ -567,12 +567,12 @@ body {
   margin: 0;
   white-space: pre;
   scrollbar-width: thin;
-  scrollbar-color: var(--color-accent) transparent;
+  scrollbar-color: var(--color-muted) transparent;
 }
 
 .file-item__preview pre::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 .file-item__preview pre::-webkit-scrollbar-track {
@@ -580,12 +580,12 @@ body {
 }
 
 .file-item__preview pre::-webkit-scrollbar-thumb {
-  background: var(--color-accent);
-  border-radius: 3px;
+  background: var(--color-muted);
+  border-radius: 4px;
 }
 
 .file-item__preview pre::-webkit-scrollbar-thumb:hover {
-  background: var(--color-muted);
+  background: var(--color-text);
 }
 
 .file-item__preview pre::-webkit-scrollbar-corner {
