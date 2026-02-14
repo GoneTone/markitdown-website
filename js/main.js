@@ -24,8 +24,9 @@ const fileList           = document.getElementById('file-list');
 const listProgressText   = document.getElementById('list-progress-text');
 const btnUploadMore         = document.getElementById('btn-upload-more');
 const btnDownloadZip        = document.getElementById('btn-download-zip');
-const btnUploadMoreFooter   = document.getElementById('btn-upload-more-footer');
-const btnDownloadZipFooter  = document.getElementById('btn-download-zip-footer');
+const btnUploadMoreFooter        = document.getElementById('btn-upload-more-footer');
+const btnDownloadZipFooter       = document.getElementById('btn-download-zip-footer');
+const listProgressTextFooter     = document.getElementById('list-progress-text-footer');
 
 // ── 狀態管理 ──────────────────────────────────────────────────────────────
 
@@ -337,7 +338,9 @@ function updateListHeader() {
 
   const isProcessing = fileQueue.some(i => i.status === 'converting' || i.status === 'waiting');
   const failedNote = failed > 0 ? `（${failed} 個失敗）` : '';
-  listProgressText.textContent = `${done} / ${total} 完成${failedNote}`;
+  const progressText = `${done} / ${total} 完成${failedNote}`;
+  listProgressText.textContent = progressText;
+  listProgressTextFooter.textContent = progressText;
   const zipDisabled = done === 0 || isProcessing;
   btnDownloadZip.disabled = zipDisabled;
   btnDownloadZipFooter.disabled = zipDisabled;
