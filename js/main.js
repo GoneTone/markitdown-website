@@ -132,17 +132,37 @@ function isSupportedFile(filename) {
 }
 
 /**
+ * 若 filename 已存在於 existingNames，
+ * 在主檔名後附加 (1)、(2)… 直到不重複為止。
+ * @param {string} filename
+ * @param {Set<string>} existingNames
+ * @returns {string}
+ */
+function deduplicateFilename(filename, existingNames) {
+  if (!existingNames.has(filename)) return filename;
+  const lastDot = filename.lastIndexOf('.');
+  const base = lastDot !== -1 ? filename.slice(0, lastDot) : filename;
+  const ext  = lastDot !== -1 ? filename.slice(lastDot) : '';
+  let n = 1;
+  let candidate;
+  do { candidate = `${base} (${n++})${ext}`; } while (existingNames.has(candidate));
+  return candidate;
+}
+
+/**
  * 建立 FileItem 物件
  * @param {File} file
+ * @param {Set<string>} existingNames - 已使用的檔名集合（用於去重）
  * @returns {Object}
  */
-function createFileItem(file) {
-  const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+function createFileItem(file, existingNames = new Set()) {
+  const filename  = deduplicateFilename(file.name, existingNames);
+  const ext       = file.name.split('.').pop()?.toLowerCase() ?? '';
   const supported = isSupportedFile(file.name);
   return {
     id: crypto.randomUUID(),
     file,
-    filename: file.name,
+    filename,
     status: supported ? 'waiting' : 'error',
     errorMessage: supported ? '' : `不支援的格式：.${ext}`,
     markdown: '',
@@ -163,7 +183,12 @@ function handleFiles(files) {
     showError('請等待轉換引擎完成載入後再上傳檔案。');
     return;
   }
-  fileQueue = Array.from(files).map(createFileItem);
+  const seen = new Set();
+  fileQueue = Array.from(files).map(file => {
+    const item = createFileItem(file, seen);
+    seen.add(item.filename);
+    return item;
+  });
   currentIndex = -1;
   showState(STATES.LIST);
   renderFileList();
@@ -176,7 +201,12 @@ function handleFiles(files) {
  * @param {FileList|File[]} files
  */
 function appendFiles(files) {
-  const newItems = Array.from(files).map(createFileItem);
+  const seen = new Set(fileQueue.map(i => i.filename));
+  const newItems = Array.from(files).map(file => {
+    const item = createFileItem(file, seen);
+    seen.add(item.filename);
+    return item;
+  });
   fileQueue.push(...newItems);
   newItems.forEach(item => fileList.appendChild(createFileItemEl(item)));
   updateListHeader();
