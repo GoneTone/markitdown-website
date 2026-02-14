@@ -113,72 +113,43 @@ function isSupportedFile(filename) {
   return SUPPORTED_EXTENSIONS.has(ext);
 }
 
-/** 處理選取的檔案 */
-function handleFile(file) {
+/**
+ * 建立 FileItem 物件
+ * @param {File} file
+ * @returns {Object}
+ */
+function createFileItem(file) {
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+  const supported = isSupportedFile(file.name);
+  return {
+    id: crypto.randomUUID(),
+    file,
+    filename: file.name,
+    status: supported ? 'waiting' : 'error',
+    errorMessage: supported ? '' : `不支援的格式：.${ext}`,
+    markdown: '',
+    charCount: 0,
+    lineCount: 0,
+    duration: 0,
+    _startTime: 0,
+    expanded: false,
+  };
+}
+
+/**
+ * 接收選取的檔案，初始化佇列並切換至清單狀態。
+ * @param {FileList|File[]} files
+ */
+function handleFiles(files) {
   if (!isEngineReady) {
     showError('請等待轉換引擎完成載入後再上傳檔案。');
     return;
   }
-
-  if (!isSupportedFile(file.name)) {
-    const ext = file.name.split('.').pop()?.toUpperCase() ?? '未知';
-    showError(
-      `不支援的格式：.${ext}\n\n` +
-      `支援的格式：PDF、DOCX、XLSX、PPTX、HTML、CSV、EPUB`
-    );
-    return;
-  }
-
-  currentFilename = file.name;
-  convertStartTime = Date.now();
-  showState(STATES.CONVERTING);
-  convertingMsg.textContent = '準備中...';
-
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    // 將 ArrayBuffer 傳給 Worker（使用 Transferable 避免複製）
-    worker.postMessage(
-      { type: 'convert', file: e.target.result, filename: file.name },
-      [e.target.result]
-    );
-  };
-  reader.onerror = () => {
-    showError('無法讀取檔案，請重試。');
-    showState(STATES.UPLOAD);
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-/** 轉換成功後更新 UI */
-function handleConversionResult(markdown) {
-  currentMarkdown = markdown;
-  const elapsed = ((Date.now() - convertStartTime) / 1000).toFixed(1);
-  const lines = markdown.split('\n').length;
-  const chars = markdown.length;
-
-  resultFilename.textContent = currentFilename.replace(/\.[^.]+$/, '.md');
-  resultStats.textContent = `${chars.toLocaleString()} 字元 · ${lines.toLocaleString()} 行 · 耗時 ${elapsed}s`;
-  resultCode.textContent = markdown;
-
-  showState(STATES.RESULT);
-}
-
-// ── 下載功能 ──────────────────────────────────────────────────────────────
-
-function downloadMarkdown() {
-  if (!currentMarkdown) return;
-
-  const outputFilename = currentFilename.replace(/\.[^.]+$/, '.md');
-  const blob = new Blob([currentMarkdown], { type: 'text/markdown;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = outputFilename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  fileQueue = Array.from(files).map(createFileItem);
+  currentIndex = -1;
+  showState(STATES.LIST);
+  renderFileList();
+  processNextFile();
 }
 
 // ── 錯誤顯示 ──────────────────────────────────────────────────────────────
@@ -211,8 +182,8 @@ dropZone.addEventListener('dragleave', (e) => {
 dropZone.addEventListener('drop', (e) => {
   e.preventDefault();
   dropZone.classList.remove('drop-zone--dragging');
-  const file = e.dataTransfer?.files?.[0];
-  if (file) handleFile(file);
+  const files = e.dataTransfer?.files;
+  if (files?.length) handleFiles(files);
 });
 
 dropZone.addEventListener('click', () => {
@@ -231,11 +202,14 @@ dropZone.addEventListener('keydown', (e) => {
 });
 
 fileInput.addEventListener('change', () => {
-  const file = fileInput.files?.[0];
-  if (file) {
-    handleFile(file);
-    fileInput.value = ''; // 允許重複選同一個檔案
+  const files = fileInput.files;
+  if (!files?.length) return;
+  if (currentState === STATES.LIST) {
+    appendFiles(files);   // Task 9 實作
+  } else {
+    handleFiles(files);
   }
+  fileInput.value = '';
 });
 
 // ── 按鈕事件 ──────────────────────────────────────────────────────────────
