@@ -369,6 +369,7 @@ dropZone.addEventListener('dragleave', (e) => {
 
 dropZone.addEventListener('drop', (e) => {
   e.preventDefault();
+  e.stopPropagation();
   dropZone.classList.remove('drop-zone--dragging');
   const files = e.dataTransfer?.files;
   if (files?.length) handleFiles(files);
