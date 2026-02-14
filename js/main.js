@@ -170,6 +170,43 @@ function handleFiles(files) {
   processNextFile();
 }
 
+// ── 下載功能 ──────────────────────────────────────────────────────────────
+
+/**
+ * 下載單一 FileItem 的 Markdown 輸出
+ * @param {Object} item - FileItem (status === 'done')
+ */
+function downloadFile(item) {
+  const filename = item.filename.replace(/\.[^.]+$/, '.md');
+  const blob = new Blob([item.markdown], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/** 將所有 done 項目打包成 ZIP 下載 */
+async function downloadAllZip() {
+  const doneItems = fileQueue.filter(i => i.status === 'done');
+  if (doneItems.length === 0) return;
+
+  const zip = new JSZip();
+  doneItems.forEach(item => {
+    const filename = item.filename.replace(/\.[^.]+$/, '.md');
+    zip.file(filename, item.markdown);
+  });
+
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'converted.zip';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 // ── 錯誤顯示 ──────────────────────────────────────────────────────────────
 
 function showError(message) {
@@ -350,6 +387,23 @@ fileInput.addEventListener('change', () => {
 // ── 按鈕事件 ──────────────────────────────────────────────────────────────
 
 btnErrorDismiss.addEventListener('click', dismissError);
+
+// 清單項目互動（下載、預覽切換）
+fileList.addEventListener('click', (e) => {
+  const li = e.target.closest('[data-id]');
+  if (!li) return;
+  const item = fileQueue.find(i => i.id === li.dataset.id);
+  if (!item) return;
+
+  if (e.target.closest('.file-item__btn-download')) {
+    downloadFile(item);
+  } else if (e.target.closest('.file-item__btn-preview')) {
+    item.expanded = !item.expanded;
+    updateFileItem(item);
+  }
+});
+
+btnDownloadZip.addEventListener('click', downloadAllZip);
 
 // ── 初始化 ────────────────────────────────────────────────────────────────
 
