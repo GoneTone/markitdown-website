@@ -172,6 +172,7 @@ function handleFiles(files) {
 
 /**
  * 追加新檔案至現有佇列，並在閒置時繼續轉換。
+ * 前提：僅在 currentState === STATES.LIST 時呼叫（引擎必然已就緒）。
  * @param {FileList|File[]} files
  */
 function appendFiles(files) {
@@ -180,8 +181,8 @@ function appendFiles(files) {
   newItems.forEach(item => fileList.appendChild(createFileItemEl(item)));
   updateListHeader();
 
-  const isIdle = !fileQueue.some(i => i.status === 'converting');
-  if (isIdle) processNextFile();
+  const isWorkerFree = !fileQueue.some(i => i.status === 'converting');
+  if (isWorkerFree) processNextFile();
 }
 
 // ── 下載功能 ──────────────────────────────────────────────────────────────
