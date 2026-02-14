@@ -164,6 +164,86 @@ function dismissError() {
   errorMessage.textContent = '';
 }
 
+// ── 清單渲染 ──────────────────────────────────────────────────────────────
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/**
+ * 根據 FileItem 建立 <li> 元素
+ * @param {Object} item - FileItem
+ * @returns {HTMLLIElement}
+ */
+function createFileItemEl(item) {
+  const li = document.createElement('li');
+  li.className = `file-item file-item--${item.status}`;
+  li.dataset.id = item.id;
+
+  const iconContent = item.status === 'converting'
+    ? '<div class="spinner-small"></div>'
+    : '';
+
+  const metaText = item.status === 'done'
+    ? `${item.charCount.toLocaleString()} 字 · ${(item.duration / 1000).toFixed(1)}s`
+    : item.status === 'error'
+      ? escapeHtml(item.errorMessage)
+      : '';
+
+  const isDone = item.status === 'done';
+  const previewLabel = item.expanded ? '收起' : '預覽';
+  const previewContent = item.expanded ? escapeHtml(item.markdown) : '';
+
+  li.innerHTML = `
+    <div class="file-item__row">
+      <span class="file-item__icon" aria-hidden="true">${iconContent}</span>
+      <span class="file-item__name" title="${escapeHtml(item.filename)}">${escapeHtml(item.filename)}</span>
+      <span class="file-item__meta">${metaText}</span>
+      <button class="file-item__btn-preview" type="button"${isDone ? '' : ' hidden'}>${previewLabel}</button>
+      <button class="file-item__btn-download" type="button"${isDone ? '' : ' hidden'}>下載</button>
+    </div>
+    <div class="file-item__preview"${item.expanded ? '' : ' hidden'}>
+      <pre><code>${previewContent}</code></pre>
+    </div>
+  `;
+  return li;
+}
+
+/**
+ * 以最新 item 資料替換 fileList 中既有的 <li>，
+ * 若不存在則附加至末尾。
+ * @param {Object} item - FileItem
+ */
+function updateFileItem(item) {
+  const existing = fileList.querySelector(`[data-id="${item.id}"]`);
+  const newEl = createFileItemEl(item);
+  if (existing) {
+    existing.replaceWith(newEl);
+  } else {
+    fileList.appendChild(newEl);
+  }
+}
+
+function updateListHeader() {
+  const total  = fileQueue.length;
+  const done   = fileQueue.filter(i => i.status === 'done').length;
+  const failed = fileQueue.filter(i => i.status === 'error').length;
+
+  const failedNote = failed > 0 ? `（${failed} 個失敗）` : '';
+  listProgressText.textContent = `${done} / ${total} 完成${failedNote}`;
+  btnDownloadZip.disabled = done === 0;
+}
+
+function renderFileList() {
+  fileList.innerHTML = '';
+  fileQueue.forEach(item => fileList.appendChild(createFileItemEl(item)));
+  updateListHeader();
+}
+
 // ── 拖放事件 ──────────────────────────────────────────────────────────────
 
 dropZone.addEventListener('dragover', (e) => {
