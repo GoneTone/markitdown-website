@@ -35,16 +35,7 @@ async function initialize() {
     //   lxml:               pptx 轉換（python-pptx 依賴）
     //   pillow:             pptx 轉換（python-pptx 依賴）
     //   cryptography:       pdf 轉換（pdfminer.six 依賴，會自動帶入 cffi）
-    let pkgPct = 40;
-    await pyodide.loadPackage(['micropip', 'charset-normalizer', 'pandas', 'lxml', 'pillow', 'cryptography'], {
-      messageCallback: (msg) => {
-        if (msg.startsWith('Loading ')) {
-          pkgPct = Math.min(pkgPct + 3, 58);
-          const name = msg.replace('Loading ', '').split(' ')[0];
-          sendProgress(`正在載入 ${name}...`, pkgPct);
-        }
-      },
-    });
+    await pyodide.loadPackage(['micropip', 'charset-normalizer', 'pandas', 'lxml', 'pillow', 'cryptography']);
 
     sendProgress('正在讀取套件清單...', 62);
     const response = await fetch('/wheels/manifest.json');
