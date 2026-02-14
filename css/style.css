@@ -69,6 +69,12 @@ body {
   flex-wrap: wrap;
 }
 
+.site-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
 .site-title {
   font-size: 1.5rem;
   font-weight: 700;

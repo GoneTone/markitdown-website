@@ -109,6 +109,10 @@ python scripts/dev_server.py
 ```
 markitdown-website/
 ├── index.html                    主頁面
+├── images/
+│   ├── favicon.svg               網站圖示
+│   └── og-image.svg              社群分享預覽圖（svg）
+│   └── og-image.png              社群分享預覽圖（png）
 ├── css/
 │   └── style.css                 樣式表
 ├── js/
