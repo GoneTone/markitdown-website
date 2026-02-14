@@ -24,7 +24,6 @@ const fileList           = document.getElementById('file-list');
 const listProgressText   = document.getElementById('list-progress-text');
 const btnUploadMore      = document.getElementById('btn-upload-more');
 const btnDownloadZip     = document.getElementById('btn-download-zip');
-const listContainer      = document.querySelector('#state-list .list-container');
 
 // ── 狀態管理 ──────────────────────────────────────────────────────────────
 
@@ -390,22 +389,24 @@ dropZone.addEventListener('keydown', (e) => {
   }
 });
 
-// ── 清單拖放事件 ───────────────────────────────────────────────────────────
+// ── 清單拖放事件（全頁範圍）────────────────────────────────────────────────
 
-listContainer.addEventListener('dragover', (e) => {
+document.addEventListener('dragover', (e) => {
+  if (currentState !== STATES.LIST) return;
   e.preventDefault();
-  listContainer.classList.add('list-container--dragging');
+  document.body.classList.add('page--dragging');
 });
 
-listContainer.addEventListener('dragleave', (e) => {
-  if (!listContainer.contains(e.relatedTarget)) {
-    listContainer.classList.remove('list-container--dragging');
+document.addEventListener('dragleave', (e) => {
+  if (e.relatedTarget === null) {
+    document.body.classList.remove('page--dragging');
   }
 });
 
-listContainer.addEventListener('drop', (e) => {
+document.addEventListener('drop', (e) => {
+  if (currentState !== STATES.LIST) return;
   e.preventDefault();
-  listContainer.classList.remove('list-container--dragging');
+  document.body.classList.remove('page--dragging');
   const files = e.dataTransfer?.files;
   if (files?.length) appendFiles(files);
 });

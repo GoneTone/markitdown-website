@@ -430,10 +430,14 @@ body {
   padding: 2rem 0;
 }
 
-.list-container--dragging {
-  outline: 2px dashed var(--color-highlight);
-  outline-offset: 4px;
+.page--dragging::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  border: 3px dashed var(--color-highlight);
   border-radius: var(--radius-sm);
+  pointer-events: none;
+  z-index: 100;
 }
 
 .list-header {
