@@ -67,7 +67,6 @@ function createWorker() {
         break;
 
       case 'progress':
-        convertingMsg.textContent = message;
         if (!isEngineReady) {
           if (engineProgressText) engineProgressText.textContent = message;
           if (engineProgressBar && typeof percent === 'number') {
