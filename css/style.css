@@ -256,6 +256,10 @@ body {
   100% { background-position: -200% 0; }
 }
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* 支援格式標籤 */
 .supported-formats {
   margin-top: 2rem;
@@ -406,6 +410,10 @@ body {
   .site-header {
     padding: 0.75rem 1rem;
   }
+
+  .list-header {
+    flex-wrap: wrap;
+  }
 }
 
 /* ===== 清單狀態 ===== */
@@ -505,7 +513,7 @@ body {
   padding: 0.2rem 0.6rem;
   font-size: 0.75rem;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm, 4px);
+  border-radius: var(--radius-sm, 6px);
   background: transparent;
   cursor: pointer;
   white-space: nowrap;
@@ -520,13 +528,13 @@ body {
 
 /* Markdown 預覽展開區 */
 .file-item__preview {
-  padding: 0.5rem 0 1rem 28px;
+  padding: 0.5rem 0 1rem calc(20px + 0.75rem);
 }
 
 .file-item__preview pre {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm, 4px);
+  border-radius: var(--radius-sm, 6px);
   padding: 1rem;
   overflow-x: auto;
   max-height: 400px;
@@ -547,8 +555,4 @@ body {
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   flex-shrink: 0;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
