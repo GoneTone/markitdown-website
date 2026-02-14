@@ -1,0 +1,26 @@
+# Pyodide runtime 和 wheels 由 Dockerfile builder 階段下載，不需打包進 build context
+pyodide/
+wheels/
+
+# 版本控制
+.git/
+.gitignore
+
+# IDE / 工具設定
+.idea/
+.claude/
+.vscode/
+
+# 文件
+docs/
+README.md
+LICENSE
+
+# Python 快取
+__pycache__/
+*.pyc
+*.pyo
+
+# 建置暫存
+scripts/_tmp/
+scripts/*.tar.bz2

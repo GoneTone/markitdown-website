@@ -1,8 +1,6 @@
 services:
   markitdown:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: gonetone/markitdown-website:latest
     container_name: markitdown-website
     ports:
       - "8080:80"

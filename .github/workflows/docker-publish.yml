@@ -1,0 +1,57 @@
+name: 發布 Docker 映像檔
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build-and-push:
+    name: 建置並推送至 Docker Hub
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 取出程式碼
+        uses: actions/checkout@v6
+
+      # 啟用 QEMU，讓 x86 runner 能交叉編譯 arm64
+      - name: 設定 QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # Buildx 是 multi-platform 建置所必需的
+      - name: 設定 Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 登入 Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 自動產生 tags：
+      #   master 分支 push → :latest
+      #   tag v1.2.3 push  → :1.2.3、:1.2、:1、:latest
+      - name: 擷取映像檔 metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: gonetone/markitdown-website
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+
+      - name: 建置並推送
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # 使用 GitHub Actions 快取，避免每次重新下載 400MB 的 Pyodide
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
