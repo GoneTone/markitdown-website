@@ -299,6 +299,12 @@ body {
   white-space: nowrap;
 }
 
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .btn:active {
   transform: scale(0.97);
 }
