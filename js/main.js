@@ -75,14 +75,32 @@ function createWorker() {
         }
         break;
 
-      case 'result':
-        handleConversionResult(markdown);
+      case 'result': {
+        const item = fileQueue[currentIndex];
+        if (item) {
+          item.status = 'done';
+          item.markdown = markdown;
+          item.charCount = markdown.length;
+          item.lineCount = markdown.split('\n').length;
+          item.duration = Date.now() - item._startTime;
+          updateFileItem(item);
+          updateListHeader();
+        }
+        processNextFile();
         break;
+      }
 
-      case 'error':
-        showError(message);
-        showState(STATES.UPLOAD);
+      case 'error': {
+        const item = fileQueue[currentIndex];
+        if (item) {
+          item.status = 'error';
+          item.errorMessage = message || '轉換失敗';
+          updateFileItem(item);
+          updateListHeader();
+        }
+        processNextFile();
         break;
+      }
     }
   };
 
@@ -242,6 +260,43 @@ function renderFileList() {
   fileList.innerHTML = '';
   fileQueue.forEach(item => fileList.appendChild(createFileItemEl(item)));
   updateListHeader();
+}
+
+/**
+ * 找出佇列中下一個 waiting 項目並送給 Worker 轉換。
+ * 若無則更新 header 後結束。
+ */
+function processNextFile() {
+  const nextIndex = fileQueue.findIndex(
+    (item, i) => i > currentIndex && item.status === 'waiting'
+  );
+
+  if (nextIndex === -1) {
+    updateListHeader();
+    return;
+  }
+
+  currentIndex = nextIndex;
+  const item = fileQueue[currentIndex];
+  item.status = 'converting';
+  item._startTime = Date.now();
+  updateFileItem(item);
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    worker.postMessage(
+      { type: 'convert', file: e.target.result, filename: item.filename },
+      [e.target.result]
+    );
+  };
+  reader.onerror = () => {
+    item.status = 'error';
+    item.errorMessage = '無法讀取檔案';
+    updateFileItem(item);
+    updateListHeader();
+    processNextFile();
+  };
+  reader.readAsArrayBuffer(item.file);
 }
 
 // ── 拖放事件 ──────────────────────────────────────────────────────────────
