@@ -16,3 +16,7 @@ scripts/*.tar.bz2
 # 系統檔案
 .DS_Store
 Thumbs.db
+
+# 設定檔
+.claude/settings.local.json
+.idea/

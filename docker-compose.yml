@@ -1,0 +1,9 @@
+services:
+  markitdown:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: markitdown-website
+    ports:
+      - "8080:80"
+    restart: unless-stopped
