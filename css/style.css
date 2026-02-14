@@ -566,6 +566,30 @@ body {
   line-height: 1.5;
   margin: 0;
   white-space: pre;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-accent) transparent;
+}
+
+.file-item__preview pre::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.file-item__preview pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.file-item__preview pre::-webkit-scrollbar-thumb {
+  background: var(--color-accent);
+  border-radius: 3px;
+}
+
+.file-item__preview pre::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted);
+}
+
+.file-item__preview pre::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 /* 清單項目 converting 狀態小 spinner */
