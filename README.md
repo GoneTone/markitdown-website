@@ -16,6 +16,8 @@
 
 ### 使用 Docker（推薦）
 
+下載 [docker-compose.yml](docker-compose.yml) 後執行：
+
 ```bash
 # 啟動（首次會自動從 Docker Hub 拉取映像檔）
 docker compose up
@@ -25,6 +27,18 @@ docker compose up -d
 
 # 停止
 docker compose down
+```
+
+`docker-compose.yml` 內容如下，可依需求調整 port：
+
+```yaml
+services:
+  markitdown:
+    image: gonetone/markitdown-website:latest
+    container_name: markitdown-website
+    ports:
+      - "8080:80"
+    restart: unless-stopped
 ```
 
 啟動後開啟瀏覽器前往 [http://localhost:8080](http://localhost:8080)
