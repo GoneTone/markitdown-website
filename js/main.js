@@ -128,7 +128,7 @@ function handleFile(file) {
     const ext = file.name.split('.').pop()?.toUpperCase() ?? '未知';
     showError(
       `不支援的格式：.${ext}\n\n` +
-      `支援的格式：PDF、DOCX、XLSX、PPTX、HTML、CSV、JSON、XML、EPUB`
+      `支援的格式：PDF、DOCX、XLSX、PPTX、HTML、CSV、EPUB`
     );
     return;
   }
