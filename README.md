@@ -69,8 +69,6 @@ docker compose -f docker-compose-dev.yml up
 
 修改 `index.html`、`css/`、`js/` 內的檔案後，瀏覽器會自動重新整理。
 
-> 無 Docker 環境時，可改用 `python scripts/dev_server.py`（port 8080），但不支援熱重載。
-
 ## 技術架構
 
 ```
@@ -123,8 +121,7 @@ markitdown-website/
 │   ├── main.js                   UI 邏輯
 │   └── converter.worker.js       轉換 Web Worker
 ├── scripts/
-│   ├── download_wheels.py        建置腳本（下載 Pyodide + wheels）
-│   └── dev_server.py             本地開發伺服器
+│   └── download_wheels.py        建置腳本（下載 Pyodide + wheels）
 ├── docker/
 │   ├── nginx.conf                Docker 用 Nginx 設定（正式環境）
 │   └── nginx-dev.conf            Docker 用 Nginx 設定（開發環境）
