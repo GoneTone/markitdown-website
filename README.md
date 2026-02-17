@@ -55,17 +55,21 @@ services:
 
 ### 本地開發
 
-**環境需求：** Python 3.10+
+**環境需求：** Python 3.10+、Docker
 
 ```bash
 # 1. 下載 Pyodide runtime 及 wheel 套件（僅需執行一次，約 400MB）
 python scripts/download_wheels.py
 
-# 2. 啟動本地測試伺服器（包含必要的 COOP/COEP 安全標頭）
-python scripts/dev_server.py
+# 2. 啟動開發伺服器（Nginx + Browser-sync，支援熱重載）
+docker compose -f docker-compose-dev.yml up
 
-# 3. 開啟瀏覽器前往 http://localhost:8080
+# 3. 開啟瀏覽器前往 http://localhost:3000
 ```
+
+修改 `index.html`、`css/`、`js/` 內的檔案後，瀏覽器會自動重新整理。
+
+> 無 Docker 環境時，可改用 `python scripts/dev_server.py`（port 8080），但不支援熱重載。
 
 ## 技術架構
 
@@ -122,7 +126,8 @@ markitdown-website/
 │   ├── download_wheels.py        建置腳本（下載 Pyodide + wheels）
 │   └── dev_server.py             本地開發伺服器
 ├── docker/
-│   └── nginx.conf                Docker 用 Nginx 設定
+│   ├── nginx.conf                Docker 用 Nginx 設定（正式環境）
+│   └── nginx-dev.conf            Docker 用 Nginx 設定（開發環境）
 ├── examples/
 │   ├── nginx.conf                一般部署用 Nginx 設定範本
 │   └── nginx-reverse-proxy.conf  Nginx 反向代理範本（Docker + SSL）
@@ -130,7 +135,8 @@ markitdown-website/
 │   └── workflows/
 │       └── docker-publish.yml    CI/CD：自動建置並推送至 Docker Hub
 ├── Dockerfile                    多階段 Docker 建置
-├── docker-compose.yml            Docker Compose 設定
+├── docker-compose.yml            Docker Compose 設定（正式環境）
+├── docker-compose-dev.yml        Docker Compose 設定（本地開發，含熱重載）
 ├── .dockerignore
 └── .gitignore
 ```
