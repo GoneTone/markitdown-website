@@ -526,6 +526,12 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') checkConnectivity();
 });
 
+// 定時輪詢：補足行動瀏覽器 offline/online 事件不可靠的問題
+// 頁面不可見時跳過，避免浪費資源
+setInterval(() => {
+  if (document.visibilityState === 'visible') checkConnectivity();
+}, 5000);
+
 checkConnectivity();
 
 // ── 初始化 ────────────────────────────────────────────────────────────────
