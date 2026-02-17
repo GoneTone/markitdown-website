@@ -29,6 +29,8 @@ COPY docker/nginx.conf /etc/nginx/conf.d/markitdown.conf
 
 # 複製靜態網站檔案
 COPY index.html     /usr/share/nginx/html/index.html
+COPY manifest.json  /usr/share/nginx/html/manifest.json
+COPY sw.js          /usr/share/nginx/html/sw.js
 COPY images/        /usr/share/nginx/html/images/
 COPY css/           /usr/share/nginx/html/css/
 COPY js/            /usr/share/nginx/html/js/
