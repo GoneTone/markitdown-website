@@ -140,6 +140,19 @@
     <p>❤️使用 <a href="https://github.com/anthropics/claude-code" target="_blank" rel="noopener">Claude Code</a> 開發❤️</p>
   </footer>
 
+  <!-- Service Worker：離線支援 -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {
+        // SW 註冊失敗不影響網站基本功能，靜默忽略
+      });
+
+      // 當新版 SW 接管後自動重新載入頁面（取得最新版本）
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      });
+    }
+  </script>
   <script src="/js/lib/jszip.min.js"></script>
   <script src="/js/main.js"></script>
 </body>
