@@ -9,7 +9,10 @@
  * 更新方式：修改 CACHE_VERSION 即可強制所有客戶端清除舊快取。
  */
 
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
+
+// 靜態資源版本號：與 index.html 的 APP_VERSION 保持一致
+const APP_VERSION = '1.0.0';
 
 const CACHE_NAMES = {
   ui:      `ui-${CACHE_VERSION}`,
@@ -20,14 +23,14 @@ const CACHE_NAMES = {
 // 安裝時預快取的 UI 靜態資源
 const UI_PRECACHE = [
   '/',
-  '/css/style.css',
-  '/js/main.js',
+  `/css/style.css?v=${APP_VERSION}`,
+  `/js/main.js?v=${APP_VERSION}`,
   '/js/converter.worker.js',
-  '/js/lib/jszip.min.js',
-  '/images/favicon.svg',
-  '/images/icon-192.png',
-  '/images/icon-512.png',
-  '/images/icon-180.png',
+  `/js/lib/jszip.min.js?v=${APP_VERSION}`,
+  `/images/favicon.svg?v=${APP_VERSION}`,
+  `/images/icon-192.png?v=${APP_VERSION}`,
+  `/images/icon-512.png?v=${APP_VERSION}`,
+  `/images/icon-180.png?v=${APP_VERSION}`,
   '/manifest.json',
 ];
 

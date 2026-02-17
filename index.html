@@ -23,18 +23,20 @@
   <meta name="twitter:description" content="免費線上文件轉換工具，將 PDF、DOCX、XLSX、PPTX、HTML、CSV、EPUB 轉換為 Markdown。所有處理在瀏覽器本機端完成，不上傳任何資料。" />
   <meta name="twitter:image" content="https://markitdown.reh.tw/images/og-image.png" />
 
-  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" />
+  <!-- 靜態資源版本號：更新 CSS/JS/圖片時同步修改此處與 sw.js 的 UI_PRECACHE -->
+  <!-- APP_VERSION: 1.0.0 -->
+  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg?v=1.0.0" />
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#2d2d2d" />
-  <link rel="apple-touch-icon" href="/images/icon-180.png" />
-  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="apple-touch-icon" href="/images/icon-180.png?v=1.0.0" />
+  <link rel="stylesheet" href="/css/style.css?v=1.0.0" />
 </head>
 <body>
 
   <!-- 頁首 -->
   <header class="site-header">
     <div class="header-inner">
-      <img src="/images/favicon.svg" alt="MarkItDown icon" class="site-icon" aria-hidden="true" width="48" height="48" />
+      <img src="/images/favicon.svg?v=1.0.0" alt="MarkItDown icon" class="site-icon" aria-hidden="true" width="48" height="48" />
       <h1 class="site-title">MarkItDown</h1>
       <p class="site-subtitle">在瀏覽器中將文件轉換為 Markdown</p>
     </div>
@@ -172,7 +174,7 @@
       });
     }
   </script>
-  <script src="/js/lib/jszip.min.js"></script>
-  <script src="/js/main.js"></script>
+  <script src="/js/lib/jszip.min.js?v=1.0.0"></script>
+  <script src="/js/main.js?v=1.0.0"></script>
 </body>
 </html>
