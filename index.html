@@ -148,8 +148,10 @@
       });
 
       // 當新版 SW 接管後自動重新載入頁面（取得最新版本）
+      // 用 prevController 判斷：首次安裝時 controller 為 null，不觸發重載
+      const prevController = navigator.serviceWorker.controller;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        window.location.reload();
+        if (prevController) window.location.reload();
       });
     }
   </script>
