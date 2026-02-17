@@ -1,12 +1,12 @@
 /**
- * sw.js - Service Worker
+ * sw.js — Service Worker
  *
- * Cache strategies:
- *   UI assets (HTML/CSS/JS/images) -> stale-while-revalidate
- *   /pyodide/**                     -> cache-first (version pinned)
- *   /wheels/**                      -> cache-first (version pinned)
+ * 快取策略：
+ *   UI 資源（HTML/CSS/JS/圖片）→ stale-while-revalidate
+ *   /pyodide/**                 → cache-first（版本固定）
+ *   /wheels/**                  → cache-first（版本固定）
  *
- * To force all clients to clear old cache, bump CACHE_VERSION.
+ * 更新方式：修改 CACHE_VERSION 即可強制所有客戶端清除舊快取。
  */
 
 const CACHE_VERSION = 'v2';
@@ -17,7 +17,7 @@ const CACHE_NAMES = {
   wheels:  `wheels-${CACHE_VERSION}`,
 };
 
-// UI static assets to pre-cache on install
+// 安裝時預快取的 UI 靜態資源
 const UI_PRECACHE = [
   '/',
   '/css/style.css',
@@ -31,7 +31,7 @@ const UI_PRECACHE = [
   '/manifest.json',
 ];
 
-// -- Install ------------------------------------------------------------------
+// ── Install ────────────────────────────────────────────────────────────────
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -41,15 +41,15 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// -- Activate -----------------------------------------------------------------
+// ── Activate ───────────────────────────────────────────────────────────────
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
-      // Take control of all clients immediately, no reload required
+      // 立即接管所有分頁，不等待重新整理
       await self.clients.claim();
 
-      // Delete caches that don't belong to the current version
+      // 清除不屬於當前版本的舊快取
       const currentCacheNames = Object.values(CACHE_NAMES);
       const allCacheNames = await caches.keys();
       await Promise.all(
@@ -61,13 +61,13 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// -- Fetch --------------------------------------------------------------------
+// ── Fetch ──────────────────────────────────────────────────────────────────
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Only handle same-origin requests (ignore browser-sync WebSocket etc.)
+  // 只處理同源請求（忽略 browser-sync 的 WebSocket 等）
   if (url.origin !== self.location.origin) return;
 
   const path = url.pathname;
@@ -81,12 +81,11 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
-// -- Cache strategy functions -------------------------------------------------
+// ── 快取策略函式 ────────────────────────────────────────────────────────────
 
 /**
- * Cache-first: return cached response immediately; fetch from network only on
- * cache miss, then store the response. Suitable for version-pinned large assets
- * (pyodide, wheels).
+ * Cache-first：快取命中直接回傳，未命中才請求網路並寫入快取。
+ * 適用於版本固定、不會變動的大型資源（pyodide、wheels）。
  */
 async function cacheFirst(request, cacheName) {
   const cache = await caches.open(cacheName);
@@ -101,15 +100,14 @@ async function cacheFirst(request, cacheName) {
 }
 
 /**
- * Stale-while-revalidate: return cached response immediately (if available),
- * while fetching a fresh copy in the background. Suitable for UI assets that
- * need to be available instantly but should also receive updates.
+ * Stale-while-revalidate：立即回傳快取（若有），同時背景更新快取。
+ * 適用於 UI 資源（需要即時可用，但也要接收更新）。
  */
 async function staleWhileRevalidate(request, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
 
-  // Background update - does not block the response
+  // 背景更新（不 await，不阻塞回傳）
   const networkFetch = fetch(request).then((response) => {
     if (response.ok) {
       cache.put(request, response.clone()).catch(() => {});
@@ -117,7 +115,6 @@ async function staleWhileRevalidate(request, cacheName) {
     return response;
   }).catch(() => null);
 
-  // Return cached immediately if available; otherwise wait for network.
-  // Fall back to 503 if both are unavailable (offline, not yet cached).
+  // 有快取就立即回傳，否則等網路；兩者皆無則回傳 503
   return cached ?? await networkFetch ?? new Response('Offline', { status: 503 });
 }

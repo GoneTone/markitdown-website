@@ -1,0 +1,14 @@
+# 強制文字檔使用 LF，防止 Windows CRLF 轉換截斷 UTF-8 多位元組字元
+* text=auto eol=lf
+
+# 二進位檔案不做行尾轉換
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
+*.wasm binary
+*.whl binary
+*.zip binary
+*.pdf binary
