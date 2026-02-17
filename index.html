@@ -162,7 +162,7 @@
   <!-- Service Worker：離線支援 -->
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {
+      navigator.serviceWorker.register('/sw.js?v=1.0.0').catch(() => {
         // SW 註冊失敗不影響網站基本功能，靜默忽略
       });
 
