@@ -1,15 +1,13 @@
 /**
- * sw.js — Service Worker
+ * sw.js ??Service Worker
  *
- * 快取策略：
- *   UI 資源（HTML/CSS/JS/圖片）→ stale-while-revalidate
- *   /pyodide/**                 → cache-first（版本固定）
- *   /wheels/**                  → cache-first（版本固定）
+ * 快�?策略�? *   UI 資�?（HTML/CSS/JS/?��?）�? stale-while-revalidate
+ *   /pyodide/**                 ??cache-first（�??�固定�?
+ *   /wheels/**                  ??cache-first（�??�固定�?
  *
- * 更新方式：修改 CACHE_VERSION 即可強制所有客戶端清除舊快取。
- */
+ * ?�新?��?：修??CACHE_VERSION ?�可強制?�?�客?�端清除?�快?��? */
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 
 const CACHE_NAMES = {
   ui:      `ui-${CACHE_VERSION}`,
@@ -17,7 +15,7 @@ const CACHE_NAMES = {
   wheels:  `wheels-${CACHE_VERSION}`,
 };
 
-// 安裝時預快取的 UI 靜態資源
+// 安�??��?快�???UI ?��?資�?
 const UI_PRECACHE = [
   '/',
   '/css/style.css',
@@ -25,9 +23,13 @@ const UI_PRECACHE = [
   '/js/converter.worker.js',
   '/js/lib/jszip.min.js',
   '/images/favicon.svg',
+  '/images/icon-192.png',
+  '/images/icon-512.png',
+  '/images/icon-180.png',
+  '/manifest.json',
 ];
 
-// ── Install ────────────────────────────────────────────────────────────────
+// ?�?� Install ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -37,16 +39,14 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// ── Activate ───────────────────────────────────────────────────────────────
+// ?�?� Activate ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
-      // 立即接管所有分頁，不等待重新整理
-      await self.clients.claim();
+      // 立即?�管?�?��??��?不�?待�??�整??      await self.clients.claim();
 
-      // 清除不屬於當前版本的舊快取
-      const currentCacheNames = Object.values(CACHE_NAMES);
+      // 清除不屬?�當?��??��??�快??      const currentCacheNames = Object.values(CACHE_NAMES);
       const allCacheNames = await caches.keys();
       await Promise.all(
         allCacheNames
@@ -57,13 +57,13 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// ── Fetch ──────────────────────────────────────────────────────────────────
+// ?�?� Fetch ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // 只處理同源請求（忽略 browser-sync 的 WebSocket 等）
+  // ?��??��?源�?求�?忽略 browser-sync ??WebSocket 等�?
   if (url.origin !== self.location.origin) return;
 
   const path = url.pathname;
@@ -77,12 +77,10 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
-// ── 快取策略函式 ────────────────────────────────────────────────────────────
+// ?�?� 快�?策略?��? ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 /**
- * Cache-first：快取命中直接回傳，未命中才請求網路並寫入快取。
- * 適用於版本固定、不會變動的大型資源（pyodide、wheels）。
- */
+ * Cache-first：快?�命中直?��??��??�命中�?請�?網路並寫?�快?��? * ?�用?��??�固定、�??��??��?大�?資�?（pyodide?�wheels）�? */
 async function cacheFirst(request, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
@@ -96,21 +94,18 @@ async function cacheFirst(request, cacheName) {
 }
 
 /**
- * Stale-while-revalidate：立即回傳快取（若有），同時背景更新快取。
- * 適用於 UI 資源（需要即時可用，但也要接收更新）。
- */
+ * Stale-while-revalidate：�??��??�快?��??��?）�??��??�景?�新快�??? * ?�用??UI 資�?（�?要即?�可?��?但�?要接?�更?��??? */
 async function staleWhileRevalidate(request, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
 
-  // 背景更新（不 await，不阻塞回傳）
-  const networkFetch = fetch(request).then((response) => {
+  // ?�景?�新（�? await，�??��??�傳�?  const networkFetch = fetch(request).then((response) => {
     if (response.ok) {
       cache.put(request, response.clone()).catch(() => {});
     }
     return response;
   }).catch(() => null);
 
-  // 有快取就立即回傳，否則等網路；兩者皆無則回傳 503
+  // ?�快?�就立即?�傳，否?��?網路；兩?��??��??�傳 503
   return cached ?? await networkFetch ?? new Response('Offline', { status: 503 });
 }
