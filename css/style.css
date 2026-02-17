@@ -386,6 +386,35 @@ body {
   overflow-y: auto;
 }
 
+/* ── 離線提示 ──────────────────────────────────────────────────────────── */
+
+.offline-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.5rem;
+  background-color: #3a2e00;
+  border-top: 1px solid #f0a500;
+  color: #f0a500;
+  font-size: 0.85rem;
+  z-index: 200;
+  animation: slideUp 0.25s ease;
+}
+
+.offline-banner[hidden] {
+  display: none;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
 /* ── 頁尾 ──────────────────────────────────────────────────────────────── */
 
 .site-footer {

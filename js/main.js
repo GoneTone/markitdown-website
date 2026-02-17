@@ -492,6 +492,22 @@ fileList.addEventListener('click', (e) => {
 btnDownloadZip.addEventListener('click', downloadAllZip);
 btnDownloadZipFooter.addEventListener('click', downloadAllZip);
 
+// ── 離線狀態偵測 ──────────────────────────────────────────────────────────
+
+const offlineBanner = document.getElementById('offline-banner');
+
+function updateOnlineStatus() {
+  if (navigator.onLine) {
+    offlineBanner.setAttribute('hidden', '');
+  } else {
+    offlineBanner.removeAttribute('hidden');
+  }
+}
+
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
+
 // ── 初始化 ────────────────────────────────────────────────────────────────
 
 // 啟動 Web Worker

@@ -9,7 +9,7 @@
  * 更新方式：修改 CACHE_VERSION 即可強制所有客戶端清除舊快取。
  */
 
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 
 const CACHE_NAMES = {
   ui:      `ui-${CACHE_VERSION}`,
