@@ -86,9 +86,14 @@ async function cacheFirst(request, cacheName) {
   const cached = await cache.match(request);
   if (cached) return cached;
 
-  const response = await fetch(request);
+  let response;
+  try {
+    response = await fetch(request);
+  } catch (err) {
+    throw err; // 離線且快取未命中，讓請求正常失敗
+  }
   if (response.ok) {
-    cache.put(request, response.clone());
+    cache.put(request, response.clone()).catch(() => {});
   }
   return response;
 }
@@ -104,11 +109,11 @@ async function staleWhileRevalidate(request, cacheName) {
   // 背景更新（不 await，不阻塞回傳）
   const networkFetch = fetch(request).then((response) => {
     if (response.ok) {
-      cache.put(request, response.clone());
+      cache.put(request, response.clone()).catch(() => {});
     }
     return response;
-  }).catch(() => {/* 離線時忽略網路錯誤 */});
+  }).catch(() => null);
 
-  // 有快取就立即回傳，否則等網路
-  return cached ?? networkFetch;
+  // 有快取就立即回傳，否則等網路；兩者皆無則回傳 503
+  return cached ?? await networkFetch ?? new Response('Offline', { status: 503 });
 }
