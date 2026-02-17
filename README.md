@@ -120,7 +120,7 @@ markitdown-website/
 ├── manifest.json                 PWA Web App Manifest
 ├── images/
 │   ├── favicon.svg               網站圖示
-│   └── og-image.svg              社群分享預覽圖（svg）
+│   ├── og-image.svg              社群分享預覽圖（svg）
 │   ├── og-image.png              社群分享預覽圖（png）
 │   ├── icon-192.png              PWA 圖示（192×192）
 │   ├── icon-512.png              PWA 圖示（512×512）
