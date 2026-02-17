@@ -496,24 +496,37 @@ btnDownloadZipFooter.addEventListener('click', downloadAllZip);
 
 const offlineBanner = document.getElementById('offline-banner');
 
-function updateOnlineStatus() {
-  if (navigator.onLine) {
+/**
+ * 透過實際 fetch 確認真實連線狀態。
+ *
+ * 不使用 navigator.onLine：在 iOS Safari 等行動瀏覽器上，
+ * 即使完全離線也可能回傳 true，不可靠。
+ *
+ * 請求帶 _sw_bypass 參數，SW 會略過快取直接打網路；
+ * 離線時 fetch 拋出錯誤，即可確認為離線狀態。
+ */
+async function checkConnectivity() {
+  try {
+    await fetch(`/sw.js?_sw_bypass=1&_t=${Date.now()}`, {
+      method: 'HEAD',
+      cache: 'no-store',
+    });
     offlineBanner.setAttribute('hidden', '');
-  } else {
+  } catch {
     offlineBanner.removeAttribute('hidden');
   }
 }
 
-window.addEventListener('online', updateOnlineStatus);
-window.addEventListener('offline', updateOnlineStatus);
+window.addEventListener('online', checkConnectivity);
+window.addEventListener('offline', checkConnectivity);
 
 // 手機切換 app 或螢幕解鎖後回到前景時重新檢查
 // （mobile 瀏覽器在背景時可能不觸發 offline/online 事件）
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') updateOnlineStatus();
+  if (document.visibilityState === 'visible') checkConnectivity();
 });
 
-updateOnlineStatus();
+checkConnectivity();
 
 // ── 初始化 ────────────────────────────────────────────────────────────────
 

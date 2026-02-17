@@ -9,7 +9,7 @@
  * 更新方式：修改 CACHE_VERSION 即可強制所有客戶端清除舊快取。
  */
 
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 
 // 靜態資源版本號：與 index.html 的 APP_VERSION 保持一致
 const APP_VERSION = '1.0.0';
@@ -72,6 +72,10 @@ self.addEventListener('fetch', (event) => {
 
   // 只處理同源請求（忽略 browser-sync 的 WebSocket 等）
   if (url.origin !== self.location.origin) return;
+
+  // 連線偵測請求：略過所有快取，讓瀏覽器直接存取網路
+  // 離線時 fetch 會拋出錯誤，供 main.js 的 checkConnectivity() 判斷
+  if (url.searchParams.has('_sw_bypass')) return;
 
   const path = url.pathname;
 
