@@ -31,7 +31,9 @@ const UI_PRECACHE = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAMES.ui).then((cache) => cache.addAll(UI_PRECACHE))
+    caches.open(CACHE_NAMES.ui)
+      .then((cache) => cache.addAll(UI_PRECACHE))
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -86,12 +88,7 @@ async function cacheFirst(request, cacheName) {
   const cached = await cache.match(request);
   if (cached) return cached;
 
-  let response;
-  try {
-    response = await fetch(request);
-  } catch (err) {
-    throw err; // 離線且快取未命中，讓請求正常失敗
-  }
+  const response = await fetch(request);
   if (response.ok) {
     cache.put(request, response.clone()).catch(() => {});
   }
