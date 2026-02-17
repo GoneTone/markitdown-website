@@ -506,6 +506,13 @@ function updateOnlineStatus() {
 
 window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
+
+// 手機切換 app 或螢幕解鎖後回到前景時重新檢查
+// （mobile 瀏覽器在背景時可能不觸發 offline/online 事件）
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') updateOnlineStatus();
+});
+
 updateOnlineStatus();
 
 // ── 初始化 ────────────────────────────────────────────────────────────────
