@@ -1,11 +1,13 @@
 /**
- * sw.js ??Service Worker
+ * sw.js - Service Worker
  *
- * 快�?策略�? *   UI 資�?（HTML/CSS/JS/?��?）�? stale-while-revalidate
- *   /pyodide/**                 ??cache-first（�??�固定�?
- *   /wheels/**                  ??cache-first（�??�固定�?
+ * Cache strategies:
+ *   UI assets (HTML/CSS/JS/images) -> stale-while-revalidate
+ *   /pyodide/**                     -> cache-first (version pinned)
+ *   /wheels/**                      -> cache-first (version pinned)
  *
- * ?�新?��?：修??CACHE_VERSION ?�可強制?�?�客?�端清除?�快?��? */
+ * To force all clients to clear old cache, bump CACHE_VERSION.
+ */
 
 const CACHE_VERSION = 'v2';
 
@@ -15,7 +17,7 @@ const CACHE_NAMES = {
   wheels:  `wheels-${CACHE_VERSION}`,
 };
 
-// 安�??��?快�???UI ?��?資�?
+// UI static assets to pre-cache on install
 const UI_PRECACHE = [
   '/',
   '/css/style.css',
@@ -29,7 +31,7 @@ const UI_PRECACHE = [
   '/manifest.json',
 ];
 
-// ?�?� Install ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
+// -- Install ------------------------------------------------------------------
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -39,14 +41,16 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// ?�?� Activate ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
+// -- Activate -----------------------------------------------------------------
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
-      // 立即?�管?�?��??��?不�?待�??�整??      await self.clients.claim();
+      // Take control of all clients immediately, no reload required
+      await self.clients.claim();
 
-      // 清除不屬?�當?��??��??�快??      const currentCacheNames = Object.values(CACHE_NAMES);
+      // Delete caches that don't belong to the current version
+      const currentCacheNames = Object.values(CACHE_NAMES);
       const allCacheNames = await caches.keys();
       await Promise.all(
         allCacheNames
@@ -57,13 +61,13 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// ?�?� Fetch ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
+// -- Fetch --------------------------------------------------------------------
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // ?��??��?源�?求�?忽略 browser-sync ??WebSocket 等�?
+  // Only handle same-origin requests (ignore browser-sync WebSocket etc.)
   if (url.origin !== self.location.origin) return;
 
   const path = url.pathname;
@@ -77,10 +81,13 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
-// ?�?� 快�?策略?��? ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
+// -- Cache strategy functions -------------------------------------------------
 
 /**
- * Cache-first：快?�命中直?��??��??�命中�?請�?網路並寫?�快?��? * ?�用?��??�固定、�??��??��?大�?資�?（pyodide?�wheels）�? */
+ * Cache-first: return cached response immediately; fetch from network only on
+ * cache miss, then store the response. Suitable for version-pinned large assets
+ * (pyodide, wheels).
+ */
 async function cacheFirst(request, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
@@ -94,18 +101,23 @@ async function cacheFirst(request, cacheName) {
 }
 
 /**
- * Stale-while-revalidate：�??��??�快?��??��?）�??��??�景?�新快�??? * ?�用??UI 資�?（�?要即?�可?��?但�?要接?�更?��??? */
+ * Stale-while-revalidate: return cached response immediately (if available),
+ * while fetching a fresh copy in the background. Suitable for UI assets that
+ * need to be available instantly but should also receive updates.
+ */
 async function staleWhileRevalidate(request, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
 
-  // ?�景?�新（�? await，�??��??�傳�?  const networkFetch = fetch(request).then((response) => {
+  // Background update - does not block the response
+  const networkFetch = fetch(request).then((response) => {
     if (response.ok) {
       cache.put(request, response.clone()).catch(() => {});
     }
     return response;
   }).catch(() => null);
 
-  // ?�快?�就立即?�傳，否?��?網路；兩?��??��??�傳 503
+  // Return cached immediately if available; otherwise wait for network.
+  // Fall back to 503 if both are unavailable (offline, not yet cached).
   return cached ?? await networkFetch ?? new Response('Offline', { status: 503 });
 }
