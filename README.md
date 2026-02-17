@@ -62,13 +62,10 @@ services:
 # 1. 下載 Pyodide runtime 及 wheel 套件（僅需執行一次，約 400MB）
 python scripts/download_wheels.py
 
-# 2. 產生 PWA 圖示（僅需執行一次，需要 Cairo 系統函式庫；Windows 請使用 WSL2）
-uv run scripts/generate_icons.py
-
-# 3. 啟動開發伺服器（Nginx + Browser-sync，支援熱重載）
+# 2. 啟動開發伺服器（Nginx + Browser-sync，支援熱重載）
 docker compose -f docker-compose-dev.yml up
 
-# 4. 開啟瀏覽器前往 http://localhost:3000
+# 3. 開啟瀏覽器前往 http://localhost:3000
 ```
 
 修改 `index.html`、`css/`、`js/` 內的檔案後，瀏覽器會自動重新整理。
@@ -124,15 +121,16 @@ markitdown-website/
 │   ├── og-image.png              社群分享預覽圖（png）
 │   ├── icon-192.png              PWA 圖示（192×192）
 │   ├── icon-512.png              PWA 圖示（512×512）
-│   └── icon-180.png              PWA 圖示（iOS，180×180）
+│   ├── icon-180.png              PWA 圖示（iOS，180×180）
+│   ├── screenshot-desktop.png    PWA 安裝截圖（桌面，1280×800）
+│   └── screenshot-mobile.png     PWA 安裝截圖（行動，390×844）
 ├── css/
 │   └── style.css                 樣式表
 ├── js/
 │   ├── main.js                   UI 邏輯
 │   └── converter.worker.js       轉換 Web Worker
 ├── scripts/
-│   ├── download_wheels.py        建置腳本（下載 Pyodide + wheels）
-│   └── generate_icons.py         建置腳本（產生 PWA PNG 圖示）
+│   └── download_wheels.py        建置腳本（下載 Pyodide + wheels）
 ├── docker/
 │   ├── nginx.conf                Docker 用 Nginx 設定（正式環境）
 │   └── nginx-dev.conf            Docker 用 Nginx 設定（開發環境）
