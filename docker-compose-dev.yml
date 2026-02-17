@@ -1,0 +1,53 @@
+# docker-compose-dev.yml — 本地開發環境
+#
+# 使用方式：
+#   docker compose -f docker-compose-dev.yml up
+#
+# 前置條件：
+#   先執行 python scripts/download_wheels.py 確保 pyodide/ 和 wheels/ 已存在
+#
+# 開啟瀏覽器：http://localhost:3000
+# 停止：Ctrl+C 或 docker compose -f docker-compose-dev.yml down
+
+services:
+  nginx:
+    image: nginx:alpine
+    volumes:
+      # 整個專案目錄掛載為 nginx 的 web root（唯讀）
+      - .:/usr/share/nginx/html:ro
+      # 使用開發專用的 nginx 設定
+      - ./nginx-dev.conf:/etc/nginx/conf.d/default.conf:ro
+    # nginx 只在內部網路暴露，不對外開放（由 browser-sync 代理）
+    expose:
+      - "80"
+    networks:
+      - dev-network
+
+  browser-sync:
+    image: node:lts-alpine
+    working_dir: /app
+    # browser-sync 作為 nginx 的反向代理，並監聽檔案變動
+    # --proxy nginx:80    → 將請求代理至 nginx 容器
+    # --files            → 監聽這些路徑的變動（不監聽 pyodide/ 和 wheels/）
+    # --no-open          → 不自動開啟瀏覽器（在容器內無意義）
+    # --port 3000        → browser-sync HTTP port
+    command: >
+      npx --yes browser-sync start
+      --proxy "nginx:80"
+      --files "*.html,css/**,js/**"
+      --no-open
+      --port 3000
+    volumes:
+      # 掛載專案目錄供 browser-sync watcher 監聽（唯讀）
+      - .:/app:ro
+    ports:
+      - "3000:3000"   # HTTP（開啟瀏覽器訪問此 port）
+      - "3001:3001"   # WebSocket（browser-sync 重載通知用）
+    depends_on:
+      - nginx
+    networks:
+      - dev-network
+
+networks:
+  dev-network:
+    driver: bridge
