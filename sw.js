@@ -79,6 +79,9 @@ self.addEventListener('fetch', (event) => {
 
   const path = url.pathname;
 
+  // API 請求：不快取，直接放行
+  if (path.startsWith('/api/')) return;
+
   if (path.startsWith('/pyodide/')) {
     event.respondWith(cacheFirst(request, CACHE_NAMES.pyodide));
   } else if (path.startsWith('/wheels/')) {
