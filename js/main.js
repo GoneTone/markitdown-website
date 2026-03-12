@@ -29,6 +29,7 @@ const btnRestart            = document.getElementById('btn-restart');
 const btnRestartFooter      = document.getElementById('btn-restart-footer');
 const urlInput         = document.getElementById('url-input');
 const btnFetchUrl      = document.getElementById('btn-fetch-url');
+const urlOfflineHint   = document.getElementById('url-offline-hint');
 
 // ── 狀態管理 ──────────────────────────────────────────────────────────────
 
@@ -51,6 +52,7 @@ function showState(stateName) {
 
 let worker = null;
 let isEngineReady = false;
+let isOnline      = false;
 let fileQueue    = [];   // FileItem[]
 let currentIndex = -1;  // 目前正在轉換的索引
 
