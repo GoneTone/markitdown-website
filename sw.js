@@ -12,7 +12,7 @@
 const CACHE_VERSION = 'v6';
 
 // 靜態資源版本號：與 index.html 的 APP_VERSION 保持一致
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.1.0';
 
 const CACHE_NAMES = {
   ui:      `ui-${CACHE_VERSION}`,

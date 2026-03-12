@@ -24,19 +24,19 @@
   <meta name="twitter:image" content="https://markitdown.reh.tw/images/og-image.png" />
 
   <!-- 靜態資源版本號：更新 CSS/JS/圖片時同步修改此處與 sw.js 的 UI_PRECACHE -->
-  <!-- APP_VERSION: 1.0.0 -->
-  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg?v=1.0.0" />
+  <!-- APP_VERSION: 1.1.0 -->
+  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg?v=1.1.0" />
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#2d2d2d" />
-  <link rel="apple-touch-icon" href="/images/icon-180.png?v=1.0.0" />
-  <link rel="stylesheet" href="/css/style.css?v=1.0.0" />
+  <link rel="apple-touch-icon" href="/images/icon-180.png?v=1.1.0" />
+  <link rel="stylesheet" href="/css/style.css?v=1.1.0" />
 </head>
 <body>
 
   <!-- 頁首 -->
   <header class="site-header">
     <div class="header-inner">
-      <img src="/images/favicon.svg?v=1.0.0" alt="MarkItDown icon" class="site-icon" aria-hidden="true" width="48" height="48" />
+      <img src="/images/favicon.svg?v=1.1.0" alt="MarkItDown icon" class="site-icon" aria-hidden="true" width="48" height="48" />
       <h1 class="site-title">MarkItDown</h1>
       <p class="site-subtitle">在瀏覽器中將文件轉換為 Markdown</p>
     </div>
@@ -181,7 +181,7 @@
   <!-- Service Worker：離線支援 -->
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js?v=1.0.0').catch(() => {
+      navigator.serviceWorker.register('/sw.js?v=1.1.0').catch(() => {
         // SW 註冊失敗不影響網站基本功能，靜默忽略
       });
 
@@ -193,7 +193,7 @@
       });
     }
   </script>
-  <script src="/js/lib/jszip.min.js?v=1.0.0"></script>
-  <script src="/js/main.js?v=1.0.0"></script>
+  <script src="/js/lib/jszip.min.js?v=1.1.0"></script>
+  <script src="/js/main.js?v=1.1.0"></script>
 </body>
 </html>
