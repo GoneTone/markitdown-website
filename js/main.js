@@ -246,10 +246,12 @@ async function fetchAndConvert(urlString) {
     return;
   }
 
-  // UI 狀態：抓取中
+  // UI 狀態：抓取中（同時禁止文件上傳）
   urlInput.disabled = true;
   btnFetchUrl.disabled = true;
   btnFetchUrl.textContent = '抓取中...';
+  dropZone.classList.add('drop-zone--disabled');
+  fileInput.disabled = true;
 
   try {
     const response = await fetch(`/api/fetch-url?url=${encodeURIComponent(urlString)}`);
@@ -308,6 +310,10 @@ async function fetchAndConvert(urlString) {
     btnFetchUrl.disabled = !(isEngineReady && isOnline);
     btnFetchUrl.textContent = '轉換';
     urlInput.value = '';
+    if (isEngineReady) {
+      dropZone.classList.remove('drop-zone--disabled');
+    }
+    fileInput.disabled = false;
   }
 }
 
