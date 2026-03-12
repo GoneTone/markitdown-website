@@ -29,6 +29,10 @@ const btnDownloadZipFooter       = document.getElementById('btn-download-zip-foo
 const listProgressTextFooter     = document.getElementById('list-progress-text-footer');
 const urlInput         = document.getElementById('url-input');
 const btnFetchUrl      = document.getElementById('btn-fetch-url');
+const urlInputList          = document.getElementById('url-input-list');
+const btnFetchUrlList       = document.getElementById('btn-fetch-url-list');
+const urlInputListFooter    = document.getElementById('url-input-list-footer');
+const btnFetchUrlListFooter = document.getElementById('btn-fetch-url-list-footer');
 
 // ── 狀態管理 ──────────────────────────────────────────────────────────────
 
@@ -661,6 +665,32 @@ urlInput.addEventListener('keydown', (e) => {
     e.preventDefault();
     const url = urlInput.value.trim();
     if (url) fetchAndConvert(url);
+  }
+});
+
+// 列表頁 URL 抓取（header）
+btnFetchUrlList.addEventListener('click', () => {
+  const url = urlInputList.value.trim();
+  if (url) { fetchAndConvert(url); urlInputList.value = ''; }
+});
+urlInputList.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const url = urlInputList.value.trim();
+    if (url) { fetchAndConvert(url); urlInputList.value = ''; }
+  }
+});
+
+// 列表頁 URL 抓取（footer）
+btnFetchUrlListFooter.addEventListener('click', () => {
+  const url = urlInputListFooter.value.trim();
+  if (url) { fetchAndConvert(url); urlInputListFooter.value = ''; }
+});
+urlInputListFooter.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const url = urlInputListFooter.value.trim();
+    if (url) { fetchAndConvert(url); urlInputListFooter.value = ''; }
   }
 });
 

@@ -706,3 +706,17 @@ body {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.url-input--compact {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  width: 200px;
+  flex: none;
+}
+
+.url-input__btn--compact {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
