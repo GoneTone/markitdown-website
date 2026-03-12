@@ -14,7 +14,7 @@
 
 - **puppeteer-core**：不自帶 Chromium，搭配獨立安裝的 chrome-headless-shell 使用。
 - **chrome-headless-shell**：Google 提供的精簡版 headless Chrome，比完整 Chromium 體積小。
-- **安裝方式**：透過 `@puppeteer/browsers` CLI 在 Docker 建置時下載。
+- **安裝方式**：透過 `@puppeteer/browsers` CLI 在 Docker 建置時下載，使用 `--install-dir` 指定固定路徑。
 
 ### Browser 生命週期
 
@@ -29,21 +29,30 @@ Request 2 → browser.newPage() → 導航 → 取得 HTML → page.close()
 Server 關閉 → browser.close()
 ```
 
+**並行限制**：使用 semaphore 限制最多 5 個同時開啟的 page，超過時回傳 503。防止高負載下記憶體耗盡。
+
 ### 抓取流程（fetchUrlHandler 改動）
 
 1. 驗證 URL 格式與協定（不變）
 2. DNS 解析 + SSRF 私有 IP 檢查（不變，在 Puppeteer 導航前執行）
-3. 開新 page：`browser.newPage()`
-4. 導航至目標 URL：`page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 })`
-5. 取得渲染後 HTML：`page.content()`
-6. 檢查 HTML 大小是否超過 10MB
-7. 回傳 HTML bytes + headers，關閉 page
+3. 取得 semaphore permit，無可用則回傳 503
+4. 開新 page：`browser.newPage()`
+5. 設定 `page.setDefaultNavigationTimeout(15000)`
+6. 啟用請求攔截以防止重導向至私有 IP（見安全防護章節）
+7. 導航至目標 URL：`page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 })`
+8. 檢查 response：若 `page.goto()` 回傳 `null`，回傳 502；若 `response.status()` 非 2xx，回傳 502
+9. 取得渲染後 HTML：`page.content()`
+10. 檢查 HTML 大小是否超過 10MB
+11. 回傳 HTML bytes + headers
+12. `finally` 區塊：`page.close()` + 釋放 semaphore permit
 
-### 回傳格式（不變）
+### 回傳格式
 
 - `Content-Type: text/html; charset=utf-8`
 - `X-Original-Url: <原始 URL>`
 - Body：渲染後的 HTML 字串
+
+**行為變更**：原本 `fetch()` 會保留原始 Content-Type（支援 PDF、圖片等二進位內容），改用 headless browser 後一律回傳渲染後的 HTML。對於 URL 指向非 HTML 資源的情況，瀏覽器會嘗試顯示該資源，`page.content()` 回傳的是瀏覽器的渲染結果（HTML wrapper）。這對 markitdown 的轉換結果影響不大，因為 markitdown 本身就是處理 HTML。
 
 前端不需要任何修改。
 
@@ -51,20 +60,23 @@ Server 關閉 → browser.close()
 
 | 項目 | 做法 |
 |------|------|
-| SSRF 防護 | 維持現有 `resolveAndCheck()` DNS 預檢，在 Puppeteer 導航前阻擋私有 IP |
+| SSRF 防護（初始請求） | 維持現有 `resolveAndCheck()` DNS 預檢，在 Puppeteer 導航前阻擋私有 IP |
+| SSRF 防護（重導向） | 使用 `page.setRequestInterception(true)` + `page.on('request')` 攔截所有導航請求，對重導向目標進行 DNS 解析並檢查私有 IP，阻擋則 `request.abort()`，通過則 `request.continue()` |
 | 大小限制 | `page.content()` 取得 HTML 後檢查 `Buffer.byteLength(html)` 是否超過 10MB |
-| 逾時 | `page.goto()` 設定 `timeout: 15000`（15 秒） |
-| 頁面隔離 | 每次請求使用獨立 page，請求結束後 `page.close()` |
-| Chrome 沙箱 | `--no-sandbox`（Docker 容器內必要）、`--disable-gpu`、`--disable-dev-shm-usage` |
+| 逾時 | `page.goto()` 設定 `timeout: 15000` + `page.setDefaultNavigationTimeout(15000)` |
+| 頁面隔離 | 每次請求使用獨立 page，`finally` 區塊確保 `page.close()` |
+| 並行限制 | Semaphore 限制最多 5 個同時頁面，防止記憶體耗盡 |
+| Chrome 沙箱 | `--no-sandbox`、`--disable-setuid-sandbox`（Docker 容器內以 root 執行，需要兩者）、`--disable-gpu`、`--disable-dev-shm-usage` |
 
 ### Chrome 啟動參數
 
 ```javascript
 puppeteer.launch({
-  executablePath: '/path/to/chrome-headless-shell',
+  executablePath: process.env.CHROME_PATH || '/app/chrome-headless-shell/chrome-headless-shell',
   headless: true,
   args: [
     '--no-sandbox',
+    '--disable-setuid-sandbox',
     '--disable-gpu',
     '--disable-dev-shm-usage',
     '--disable-software-rasterizer',
@@ -73,21 +85,24 @@ puppeteer.launch({
 });
 ```
 
+`executablePath` 透過環境變數 `CHROME_PATH` 設定，Dockerfile 中使用 `@puppeteer/browsers install --install-dir /app/chrome-headless-shell` 安裝至固定路徑。
+
 ### 錯誤處理
 
 | 情境 | HTTP 回應 |
 |------|-----------|
 | 導航逾時 | 408 `請求超時（15 秒）` |
 | 導航失敗（DNS、連線錯誤等） | 502 `無法連線至目標伺服器：<message>` |
+| `page.goto()` 回傳 null | 502 `無法取得頁面回應` |
 | HTTP 錯誤回應（4xx/5xx） | 502 `目標伺服器回應錯誤：<status>` |
+| SSRF 重導向攔截 | 403 `不允許存取內部網路位址` |
 | HTML 超過 10MB | 413 `回應過大，上限為 10MB` |
 | Browser instance 不可用 | 503 `瀏覽器引擎暫時無法使用` |
-
-導航失敗的偵測：`page.goto()` 回傳的 response 物件可檢查 `response.status()`，若非 2xx 則視為錯誤。
+| 並行頁面數已滿 | 503 `伺服器忙碌中，請稍後再試` |
 
 ### 異常恢復
 
-若 browser instance 意外崩潰，下次請求進來時偵測到 `browser.isConnected() === false`，自動重新 launch。
+若 browser instance 意外崩潰，下次請求進來時偵測到 `browser.isConnected() === false`，自動重新 launch。使用 mutex 確保只有一個請求執行 relaunch，其他並行請求等待 relaunch 完成或收到 503。
 
 ## Docker 變更
 
@@ -128,12 +143,15 @@ FROM node:20-slim AS server-deps
 WORKDIR /app/server
 COPY server/package.json server/package-lock.json ./
 RUN npm ci --production
-RUN npx @puppeteer/browsers install chrome-headless-shell@stable
+RUN npx @puppeteer/browsers install chrome-headless-shell@stable --install-dir /app/chrome-headless-shell
 ```
 
-### Nginx 安裝方式
+### Nginx 設定
 
-從 `apk add nginx` 改為 `apt-get install nginx`。Nginx 設定檔路徑從 `/etc/nginx/http.d/` 改為 `/etc/nginx/conf.d/`。
+從 `apk add nginx` 改為 `apt-get install nginx`。
+
+- 移除 Debian 預設設定：`rm -f /etc/nginx/sites-enabled/default`
+- 複製設定檔至：`/etc/nginx/conf.d/markitdown.conf`
 
 ### server/package.json 變更
 
@@ -149,19 +167,31 @@ RUN npx @puppeteer/browsers install chrome-headless-shell@stable
 }
 ```
 
+### 多架構支援
+
+`chrome-headless-shell@stable` 同時支援 `linux/amd64` 和 `linux/arm64`，CI/CD 的多平台建置（amd64/arm64）不受影響。`@puppeteer/browsers` 會自動下載對應平台的二進位檔。
+
+### 環境變數
+
+在 Dockerfile 中設定 `CHROME_PATH` 環境變數指向 chrome-headless-shell 的安裝路徑：
+
+```dockerfile
+ENV CHROME_PATH=/app/chrome-headless-shell/chrome-headless-shell
+```
+
 ## 不變的部分
 
 - 前端程式碼（`index.html`、`js/main.js`、`css/style.css`）：零修改
 - Express 路由結構、Rate limiting、健康檢查端點
-- API 路徑 `GET /fetch-url?url=<encoded_url>`
+- API 路徑 `GET /api/fetch-url?url=<encoded_url>`（Nginx 反向代理至 Node.js 的 `/fetch-url`）
 - `sw.js`、`manifest.json`
 
 ## 變更檔案清單
 
 | 檔案 | 動作 | 說明 |
 |------|------|------|
-| `server/fetch-url.js` | 修改 | 抓取邏輯改用 puppeteer-core |
-| `server/index.js` | 修改 | 啟動時 launch browser，關閉時 close browser |
+| `server/fetch-url.js` | 修改 | 抓取邏輯改用 puppeteer-core，新增 SSRF 重導向攔截、semaphore |
+| `server/index.js` | 修改 | 啟動時 launch browser，關閉時 close browser，匯出 browser getter |
 | `server/package.json` | 修改 | 新增 puppeteer-core 依賴 |
 | `Dockerfile` | 修改 | Runner/server-deps 改用 Debian slim，安裝 chrome-headless-shell 及系統依賴 |
 | `docker/start.sh` | 可能修改 | 視 nginx 路徑是否需要調整 |
