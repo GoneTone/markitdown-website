@@ -304,8 +304,8 @@ async function fetchAndConvert(urlString) {
     showError(`抓取時發生錯誤：${err.message}`);
   } finally {
     // 恢復 UI 狀態
-    urlInput.disabled = !isEngineReady;
-    btnFetchUrl.disabled = !isEngineReady;
+    urlInput.disabled = !(isEngineReady && isOnline);
+    btnFetchUrl.disabled = !(isEngineReady && isOnline);
     btnFetchUrl.textContent = '轉換';
     urlInput.value = '';
   }
