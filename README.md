@@ -182,7 +182,7 @@ markitdown-website/
    python scripts/download_wheels.py
    ```
 
-2. 安裝並啟動 URL 代理（若需要網址轉換功能）：
+2. 安裝並啟動 URL 代理（用於網址轉換功能）：
    ```bash
    cd server
    npm ci
