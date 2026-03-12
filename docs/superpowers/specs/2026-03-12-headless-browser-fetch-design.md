@@ -41,18 +41,21 @@ Server 關閉 → browser.close()
 6. 啟用請求攔截以防止重導向至私有 IP（見安全防護章節）
 7. 導航至目標 URL：`page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 })`
 8. 檢查 response：若 `page.goto()` 回傳 `null`，回傳 502；若 `response.status()` 非 2xx，回傳 502
-9. 取得渲染後 HTML：`page.content()`
-10. 檢查 HTML 大小是否超過 10MB
-11. 回傳 HTML bytes + headers
-12. `finally` 區塊：`page.close()` + 釋放 semaphore permit
+9. **Content-Type 分流**：檢查 `response.headers()['content-type']`
+   - 若為 HTML（`text/html`）→ 走 headless 渲染路徑（步驟 10）
+   - 若為非 HTML（PDF、圖片等）→ 走直接下載路徑（步驟 11）
+10. **HTML 路徑**：`page.content()` 取得渲染後 HTML → 檢查大小 → 回傳 `Content-Type: text/html` + HTML bytes
+11. **非 HTML 路徑**：關閉 page，改用 `fetch()` 直接下載原始二進位內容（複用現有的串流回傳 + 大小檢查邏輯）→ 回傳原始 `Content-Type` + 二進位 bytes
+12. `finally` 區塊：確保 `page.close()`（若尚未關閉）+ 釋放 semaphore permit
 
 ### 回傳格式
 
-- `Content-Type: text/html; charset=utf-8`
-- `X-Original-Url: <原始 URL>`
-- Body：渲染後的 HTML 字串
+根據目標資源的 Content-Type 分流：
 
-**行為變更**：原本 `fetch()` 會保留原始 Content-Type（支援 PDF、圖片等二進位內容），改用 headless browser 後一律回傳渲染後的 HTML。對於 URL 指向非 HTML 資源的情況，瀏覽器會嘗試顯示該資源，`page.content()` 回傳的是瀏覽器的渲染結果（HTML wrapper）。這對 markitdown 的轉換結果影響不大，因為 markitdown 本身就是處理 HTML。
+- **HTML 資源**：`Content-Type: text/html; charset=utf-8` + `X-Original-Url` header + 渲染後 HTML 字串
+- **非 HTML 資源**（PDF、圖片等）：保留原始 `Content-Type` + `X-Original-Url` header + 原始二進位內容（與現行行為一致）
+
+分流判斷點在 `page.goto()` 取得 response 之後，檢查 response 的 `content-type` header。非 HTML 資源會關閉 page 後改用 `fetch()` 直接下載，複用現有的串流回傳與大小檢查邏輯。
 
 前端不需要任何修改。
 
