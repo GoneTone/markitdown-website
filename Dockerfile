@@ -15,17 +15,29 @@ COPY scripts/download_wheels.py scripts/download_wheels.py
 RUN python scripts/download_wheels.py
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 階段二：runner
-#   使用 nginx:alpine 提供靜態檔案服務。
-#   只複製必要的靜態資源，不含 Python 環境。
+# 階段二：server-deps
+#   安裝 Node.js proxy 的依賴。
 # ─────────────────────────────────────────────────────────────────────────────
-FROM nginx:alpine AS runner
+FROM node:lts-alpine AS server-deps
+
+WORKDIR /app/server
+COPY server/package.json server/package-lock.json ./
+RUN npm ci --production
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 階段三：runner
+#   使用 node:lts-alpine + nginx 提供靜態檔案與 API proxy。
+# ─────────────────────────────────────────────────────────────────────────────
+FROM node:lts-alpine AS runner
+
+# 安裝 nginx
+RUN apk add --no-cache nginx
 
 # 移除預設的 nginx 設定
-RUN rm /etc/nginx/conf.d/default.conf
+RUN rm -f /etc/nginx/http.d/default.conf
 
 # 複製 Docker 專用的 nginx 設定
-COPY docker/nginx.conf /etc/nginx/conf.d/markitdown.conf
+COPY docker/nginx.conf /etc/nginx/http.d/markitdown.conf
 
 # 複製靜態網站檔案
 COPY index.html     /usr/share/nginx/html/index.html
@@ -39,7 +51,17 @@ COPY js/            /usr/share/nginx/html/js/
 COPY --from=builder /build/pyodide/ /usr/share/nginx/html/pyodide/
 COPY --from=builder /build/wheels/  /usr/share/nginx/html/wheels/
 
+# 從 server-deps 階段複製 Node.js proxy
+COPY server/index.js     /app/server/index.js
+COPY server/fetch-url.js /app/server/fetch-url.js
+COPY --from=server-deps /app/server/node_modules/ /app/server/node_modules/
+
+# 複製啟動腳本
+COPY docker/start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
+ENV PORT=3002
+
 EXPOSE 80
 
-# 使用前景模式啟動 nginx（容器內標準做法）
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["/app/start.sh"]
