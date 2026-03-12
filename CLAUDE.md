@@ -42,6 +42,7 @@ docker compose up
 - 版本字串 `APP_VERSION` 須在 `index.html` 和 `sw.js` 之間保持同步。
 - `magika` 套件已被 stub 取代，使 markitdown 回退至副檔名推斷路徑。
 - 靜態資源使用 CSS query parameter（`?v=VERSION`）進行快取破壞。
+- 功能完成時，須執行快取破壞：遞增 `APP_VERSION`（semver），同步更新 `index.html` 和 `sw.js`；更新 `index.html` 中所有 `?v=` 查詢參數；視情況遞增 `sw.js` 的 `CACHE_VERSION`。
 
 ## CI/CD
 
