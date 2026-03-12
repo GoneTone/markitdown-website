@@ -26,8 +26,9 @@ RUN npm ci --production
 
 # 下載 chrome-headless-shell 並建立 symlink
 # @puppeteer/browsers 是 puppeteer-core 的依賴，npm ci 後即可使用
-RUN npx @puppeteer/browsers install chrome-headless-shell@stable --install-dir /app/chrome-hs \
-    && CHROME_BIN=$(find /app/chrome-hs -name chrome-headless-shell -type f | head -1) \
+# 注意：--install-dir 無效，瀏覽器會安裝到 WORKDIR 相對路徑
+RUN npx @puppeteer/browsers install chrome-headless-shell@stable \
+    && CHROME_BIN=$(find /app/server -name chrome-headless-shell -type f | head -1) \
     && ln -s "$CHROME_BIN" /usr/local/bin/chrome-headless-shell
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -80,7 +81,8 @@ COPY server/browser.js          /app/server/browser.js
 COPY server/semaphore.js        /app/server/semaphore.js
 COPY server/semaphore-instance.js /app/server/semaphore-instance.js
 COPY --from=server-deps /app/server/node_modules/ /app/server/node_modules/
-COPY --from=server-deps /app/chrome-hs/ /app/chrome-hs/
+# 複製 chrome-headless-shell（安裝於 WORKDIR /app/server 下）
+COPY --from=server-deps /app/server/chrome-headless-shell/ /app/chrome-hs/
 
 # 建立 chrome-headless-shell symlink（runner stage 自建，避免複製 symlink 問題）
 RUN CHROME_BIN=$(find /app/chrome-hs -name chrome-headless-shell -type f | head -1) \

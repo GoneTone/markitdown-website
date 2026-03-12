@@ -24,8 +24,8 @@ WORKDIR /app/server
 # 安裝依賴 + chrome-headless-shell
 COPY server/package.json server/package-lock.json ./
 RUN npm ci --production \
-    && npx @puppeteer/browsers install chrome-headless-shell@stable --install-dir /app/chrome-hs \
-    && CHROME_BIN=$(find /app/chrome-hs -name chrome-headless-shell -type f | head -1) \
+    && npx @puppeteer/browsers install chrome-headless-shell@stable \
+    && CHROME_BIN=$(find /app/server -name chrome-headless-shell -type f | head -1) \
     && ln -s "$CHROME_BIN" /usr/local/bin/chrome-headless-shell
 
 ENV CHROME_PATH=/usr/local/bin/chrome-headless-shell
