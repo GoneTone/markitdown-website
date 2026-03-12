@@ -12,7 +12,7 @@ MarkItDown Website — 瀏覽器端的檔案轉 Markdown 工具，使用 Pyodide
 # 下載 Pyodide runtime 及 Python wheels（約 400MB，僅需執行一次）
 python scripts/download_wheels.py
 
-# 啟動開發伺服器（Nginx + Browser-sync 熱重載 + Node.js 代理）
+# 啟動開發伺服器（Nginx + Node.js 代理）
 docker compose -f docker-compose-dev.yml up
 # 開啟 http://localhost:3000
 

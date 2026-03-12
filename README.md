@@ -63,13 +63,13 @@ services:
 # 1. 下載 Pyodide runtime 及 wheel 套件（僅需執行一次，約 400MB）
 python scripts/download_wheels.py
 
-# 2. 啟動開發伺服器（Nginx + Browser-sync，支援熱重載）
+# 2. 啟動開發伺服器（Nginx + Node.js 代理）
 docker compose -f docker-compose-dev.yml up
 
 # 3. 開啟瀏覽器前往 http://localhost:3000
 ```
 
-修改 `index.html`、`css/`、`js/` 內的檔案後，瀏覽器會自動重新整理。
+修改檔案後，手動重新整理瀏覽器即可看到變更。
 
 ## 技術架構
 
@@ -167,7 +167,7 @@ markitdown-website/
 │       └── docker-publish.yml    CI/CD：自動建置並推送至 Docker Hub
 ├── Dockerfile                    多階段 Docker 建置（Debian slim + Chrome）
 ├── docker-compose.yml            Docker Compose 設定（正式環境）
-├── docker-compose-dev.yml        Docker Compose 設定（本地開發，含熱重載）
+├── docker-compose-dev.yml        Docker Compose 設定（本地開發）
 ├── .dockerignore
 └── .gitignore
 ```
