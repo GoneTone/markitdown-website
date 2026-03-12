@@ -41,11 +41,12 @@ Server 關閉 → browser.close()
 6. 啟用請求攔截以防止重導向至私有 IP（見安全防護章節）
 7. 導航至目標 URL：`page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 })`
 8. 檢查 response：若 `page.goto()` 回傳 `null`，回傳 502；若 `response.status()` 非 2xx，回傳 502
-9. **Content-Type 分流**：檢查 `response.headers()['content-type']`
+9. **Content-Type 分流**：檢查 `response.headers()['content-type']`，判斷是否為可直接下載的檔案類型
    - 若為 HTML（`text/html`）→ 走 headless 渲染路徑（步驟 10）
-   - 若為非 HTML（PDF、圖片等）→ 走直接下載路徑（步驟 11）
+   - 若為可直接下載的類型（見下方清單）→ 走直接下載路徑（步驟 11）
+   - 其餘未知類型 → 走 headless 渲染路徑（步驟 10），嘗試取得瀏覽器渲染結果
 10. **HTML 路徑**：`page.content()` 取得渲染後 HTML → 檢查大小 → 回傳 `Content-Type: text/html` + HTML bytes
-11. **非 HTML 路徑**：關閉 page，改用 `fetch()` 直接下載原始二進位內容（複用現有的串流回傳 + 大小檢查邏輯）→ 回傳原始 `Content-Type` + 二進位 bytes
+11. **直接下載路徑**：關閉 page，改用 `fetch()` 直接下載原始二進位內容（複用現有的串流回傳 + 大小檢查邏輯）→ 回傳原始 `Content-Type` + 二進位 bytes
 12. `finally` 區塊：確保 `page.close()`（若尚未關閉）+ 釋放 semaphore permit
 
 ### 回傳格式
@@ -53,9 +54,24 @@ Server 關閉 → browser.close()
 根據目標資源的 Content-Type 分流：
 
 - **HTML 資源**：`Content-Type: text/html; charset=utf-8` + `X-Original-Url` header + 渲染後 HTML 字串
-- **非 HTML 資源**（PDF、圖片等）：保留原始 `Content-Type` + `X-Original-Url` header + 原始二進位內容（與現行行為一致）
+- **直接下載資源**：保留原始 `Content-Type` + `X-Original-Url` header + 原始二進位內容（與現行行為一致）
 
-分流判斷點在 `page.goto()` 取得 response 之後，檢查 response 的 `content-type` header。非 HTML 資源會關閉 page 後改用 `fetch()` 直接下載，複用現有的串流回傳與大小檢查邏輯。
+### 直接下載類型清單
+
+以下 Content-Type 識別為可直接下載的檔案，不經過 headless 渲染：
+
+| 檔案格式 | Content-Type |
+|----------|-------------|
+| PDF | `application/pdf` |
+| DOCX | `application/vnd.openxmlformats-officedocument.wordprocessingml.document` |
+| XLSX | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` |
+| PPTX | `application/vnd.openxmlformats-officedocument.presentationml.presentation` |
+| CSV | `text/csv` |
+| EPUB | `application/epub+zip` |
+
+判斷方式：取 `content-type` header 的 MIME type 部分（去除 `;charset=...` 等參數），與上述清單比對。
+
+分流判斷點在 `page.goto()` 取得 response 之後。符合直接下載類型的資源會關閉 page 後改用 `fetch()` 直接下載，複用現有的串流回傳與大小檢查邏輯。SSRF 防護已在步驟 2 完成，`fetch()` 直接使用已驗證的 URL。
 
 前端不需要任何修改。
 
