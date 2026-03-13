@@ -270,7 +270,7 @@ function createFileItem(file, existingNames = new Set()) {
     id: crypto.randomUUID(),
     file,
     filename,
-    status: supported ? 'waiting' : 'error',
+    status: supported ? 'queued' : 'error',
     errorMessage: supported ? '' : `不支援的格式：.${ext}`,
     markdown: '',
     charCount: 0,
@@ -563,7 +563,7 @@ function renderFileList() {
  */
 function processNextFile() {
   const nextIndex = fileQueue.findIndex(
-    (item, i) => i > currentIndex && item.status === 'waiting'
+    (item, i) => i > currentIndex && (item.status === 'waiting' || item.status === 'queued')
   );
 
   if (nextIndex === -1) {
