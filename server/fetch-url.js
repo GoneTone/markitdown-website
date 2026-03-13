@@ -9,23 +9,18 @@
 
 const { URL } = require('node:url');
 const dns = require('node:dns/promises');
-const { ensureBrowser, isDirectDownloadType } = require('./browser');
+const { ensureBrowser, isDirectDownloadType, DIRECT_DOWNLOAD_TYPES } = require('./browser');
 const { pageSemaphore } = require('./semaphore-instance');
 
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 const TIMEOUT = 15_000; // 15 seconds
 const USER_AGENT = 'MarkItDown-Proxy/1.0 (+https://markitdown.reh.tw/)';
 
-// 支援轉換的 MIME type 白名單
+// 支援轉換的 MIME type 白名單（從 DIRECT_DOWNLOAD_TYPES 衍生，加上瀏覽器可渲染的類型）
 const SUPPORTED_CONTENT_TYPES = new Set([
+  ...DIRECT_DOWNLOAD_TYPES,
   'text/html',
   'application/xhtml+xml',
-  'application/pdf',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'text/csv',
-  'application/epub+zip',
 ]);
 
 /**
@@ -176,6 +171,7 @@ async function streamDownload(url, res) {
   }
 
   const contentType = response.headers.get('content-type') || 'application/octet-stream';
+  // 白名單檢查（ERR_ABORTED fallback 進入時尚未經過 fetchUrlHandler 的檢查）
   if (!isSupportedContentType(contentType)) {
     const mime = contentType.split(';')[0].trim().toLowerCase();
     return res.status(415).json({ error: `不支援的內容類型：${mime || '未知'}` });
