@@ -228,6 +228,33 @@ function deduplicateFilename(filename, existingNames) {
 }
 
 /**
+ * 解析 textarea 文字為 URL 物件陣列
+ * @param {string} text - textarea 內容
+ * @returns {{ entries: Array<{url: string, valid: boolean}>, error: string|null }}
+ */
+function parseUrls(text) {
+  const MAX_URLS = 10;
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines.length === 0) return { entries: [], error: null };
+
+  // 去重（保留第一個出現的）
+  const unique = [...new Set(lines)];
+
+  // 上限檢查
+  if (unique.length > MAX_URLS) {
+    return { entries: [], error: `最多輸入 ${MAX_URLS} 個網址` };
+  }
+
+  // 驗證每個 URL
+  const entries = unique.map(url => ({
+    url,
+    valid: /^https?:\/\//i.test(url),
+  }));
+
+  return { entries, error: null };
+}
+
+/**
  * 建立 FileItem 物件
  * @param {File} file
  * @param {Set<string>} existingNames - 已使用的檔名集合（用於去重）
