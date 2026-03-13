@@ -98,6 +98,15 @@
 - 在多 URL 處理期間，「重新開始」按鈕必須保持 enabled（現有邏輯在 `isProcessing` 時會 disable，需調整）
 - 點擊後 abort 所有 fetch、清空佇列、回到上傳頁
 
+### updateListHeader 調整
+
+- `isProcessing` 判斷須加入 `queued` 狀態（現有只檢查 `fetching || converting || waiting`），否則在項目仍排隊等待 fetch 時會誤判為完成
+- `queued` 項目在列表中顯示文字「排隊中」，無 spinner
+
+### 二次提交處理
+
+- 若使用者在批次處理進行中再次提交新的網址，先 abort 當前批次（與現有單一 URL 的 abort-previous 行為一致），再開始新批次
+
 ## 錯誤處理
 
 | 情境 | 行為 |
