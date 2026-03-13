@@ -120,19 +120,23 @@
 
       <div class="url-input-area">
         <div class="url-input-group">
-          <input
-            type="url"
+          <textarea
             id="url-input"
             class="url-input"
-            placeholder="輸入網頁網址，例如 https://example.com"
-            aria-describedby="url-offline-hint"
+            placeholder="每行輸入一個網址，例如：&#10;https://example.com&#10;https://docs.python.org"
+            aria-describedby="url-offline-hint url-input-hint url-limit-error"
+            rows="3"
             disabled
-          />
-          <button id="btn-fetch-url" class="btn btn--primary url-input__btn" type="button" disabled>
-            轉換
-          </button>
+          ></textarea>
+          <div class="url-input-actions">
+            <p id="url-input-hint" class="url-input-hint">每行一個網址，最多 10 個</p>
+            <p id="url-limit-error" class="url-limit-error" hidden>最多輸入 10 個網址</p>
+            <button id="btn-fetch-url" class="btn btn--primary url-input__btn" type="button" disabled>
+              轉換
+            </button>
+          </div>
         </div>
-        <p id="url-offline-hint" class="url-input-hint" hidden>
+        <p id="url-offline-hint" class="url-input-hint url-input-hint--warning" hidden>
           目前無網路連線，無法使用網址轉換。
         </p>
       </div>
