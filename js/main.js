@@ -326,10 +326,26 @@ async function fetchAndConvertMultiple(urlEntries) {
     updateListHeader();
 
     try {
-      const response = await fetch(
-        `/api/fetch-url?url=${encodeURIComponent(item.filename)}`,
-        { signal }
-      );
+      const itemController = new AbortController();
+      const fetchTimer = setTimeout(() => itemController.abort(), 20000);
+      // 批次取消時也取消單一請求
+      const onBatchAbort = () => itemController.abort();
+      signal.addEventListener('abort', onBatchAbort, { once: true });
+
+      let response;
+      try {
+        response = await fetch(
+          `/api/fetch-url?url=${encodeURIComponent(item.filename)}`,
+          { signal: itemController.signal }
+        );
+      } catch (err) {
+        // 判斷是批次取消還是單一超時
+        if (signal.aborted) throw err; // 往外拋給批次 abort 處理
+        throw new Error('請求超時（20 秒）');
+      } finally {
+        clearTimeout(fetchTimer);
+        signal.removeEventListener('abort', onBatchAbort);
+      }
 
       // 檢查 item 是否仍在佇列中
       if (!fileQueue.includes(item)) continue;

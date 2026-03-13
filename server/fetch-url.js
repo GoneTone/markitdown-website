@@ -14,7 +14,7 @@ const { pageSemaphore } = require('./semaphore-instance');
 
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 const TIMEOUT = 15_000; // 15 seconds
-const USER_AGENT = 'MarkItDown-Proxy/1.0 (+https://markitdown.reh.tw/)';
+const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 MarkItDown-Proxy/1.0';
 
 // 支援轉換的 MIME type 白名單（從 DIRECT_DOWNLOAD_TYPES 衍生，加上瀏覽器可渲染的類型）
 const SUPPORTED_CONTENT_TYPES = new Set([
@@ -217,6 +217,26 @@ async function fetchUrlHandler(req, res) {
   const dnsResult = await resolveAndCheck(url.hostname);
   if (dnsResult.error) {
     return res.status(dnsResult.status).json({ error: dnsResult.error });
+  }
+
+  // 2.5 Content-Type 預檢：偵測二進位檔案，直接走 streamDownload 跳過 Puppeteer
+  //     使用 GET + 立即中斷，避免 HEAD 被伺服器忽略或阻擋
+  try {
+    const probeController = new AbortController();
+    const probeTimer = setTimeout(() => probeController.abort(), 3000);
+    const probeRes = await fetch(url.href, {
+      signal: probeController.signal,
+      headers: { 'User-Agent': USER_AGENT, Range: 'bytes=0-0' },
+      redirect: 'follow',
+    });
+    probeController.abort(); // 收到 headers 即中斷，不下載 body
+    clearTimeout(probeTimer);
+    const probeContentType = probeRes.headers.get('content-type') || '';
+    if (isDirectDownloadType(probeContentType)) {
+      return streamDownload(url, res);
+    }
+  } catch {
+    // 預檢失敗（超時、不支援等）不影響流程，繼續走 Puppeteer 路徑
   }
 
   // 3. 取得 semaphore permit
