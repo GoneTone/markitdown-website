@@ -16,6 +16,29 @@ const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 const TIMEOUT = 15_000; // 15 seconds
 const USER_AGENT = 'MarkItDown-Proxy/1.0 (+https://markitdown.reh.tw/)';
 
+// 支援轉換的 MIME type 白名單
+const SUPPORTED_CONTENT_TYPES = new Set([
+  'text/html',
+  'application/xhtml+xml',
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'text/csv',
+  'application/epub+zip',
+]);
+
+/**
+ * 檢查 Content-Type 是否為支援轉換的類型
+ * @param {string} contentType - 原始 Content-Type header（可能含 charset 等參數）
+ * @returns {boolean}
+ */
+function isSupportedContentType(contentType) {
+  if (!contentType) return false;
+  const mime = contentType.split(';')[0].trim().toLowerCase();
+  return SUPPORTED_CONTENT_TYPES.has(mime);
+}
+
 // 私有 IP 範圍（SSRF 防護）
 const PRIVATE_RANGES = [
   // IPv4
@@ -153,6 +176,10 @@ async function streamDownload(url, res) {
   }
 
   const contentType = response.headers.get('content-type') || 'application/octet-stream';
+  if (!isSupportedContentType(contentType)) {
+    const mime = contentType.split(';')[0].trim().toLowerCase();
+    return res.status(415).json({ error: `不支援的內容類型：${mime || '未知'}` });
+  }
   res.set('Content-Type', contentType);
   res.set('X-Original-Url', url.href);
 
@@ -276,6 +303,10 @@ async function fetchUrlHandler(req, res) {
 
     // 8. Content-Type 分流
     const responseContentType = response.headers()['content-type'] || '';
+    if (!isSupportedContentType(responseContentType)) {
+      const mime = responseContentType.split(';')[0].trim().toLowerCase();
+      return res.status(415).json({ error: `不支援的內容類型：${mime || '未知'}` });
+    }
     if (isDirectDownloadType(responseContentType)) {
       await page.close();
       page = null;
@@ -311,4 +342,4 @@ async function fetchUrlHandler(req, res) {
   }
 }
 
-module.exports = { fetchUrlHandler, validateUrl, isPrivateIP, resolveAndCheck };
+module.exports = { fetchUrlHandler, validateUrl, isPrivateIP, resolveAndCheck, isSupportedContentType };
