@@ -74,7 +74,7 @@ function createWorker() {
           dropZone.classList.remove('drop-zone--disabled');
           if (isOnline) {
             urlInput.disabled = false;
-            btnFetchUrl.disabled = false;
+            // 按鈕保持禁用，待 textarea 有有效輸入後由 input 事件啟用
           }
           document.getElementById('upload-engine-status').hidden = true;
         }, 600);
@@ -229,13 +229,14 @@ function deduplicateFilename(filename, existingNames) {
   return candidate;
 }
 
+const MAX_URLS = 10;
+
 /**
  * 解析 textarea 文字為 URL 物件陣列
  * @param {string} text - textarea 內容
  * @returns {{ entries: Array<{url: string, valid: boolean}>, error: string|null }}
  */
 function parseUrls(text) {
-  const MAX_URLS = 10;
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   if (lines.length === 0) return { entries: [], error: null };
 
@@ -244,7 +245,7 @@ function parseUrls(text) {
 
   // 上限檢查
   if (unique.length > MAX_URLS) {
-    return { entries: [], error: `最多輸入 ${MAX_URLS} 個網址` };
+    return { entries: [], error: `已輸入 ${unique.length} 個網址，最多 ${MAX_URLS} 個` };
   }
 
   // 驗證每個 URL
@@ -689,9 +690,10 @@ function resetToUpload() {
   fileInput.value = '';
   dismissError();
   urlLimitError.setAttribute('hidden', '');
+  urlInputHint.textContent = `每行一個網址，最多 ${MAX_URLS} 個`;
   urlInputHint.removeAttribute('hidden');
   urlInput.disabled = !(isOnline && isEngineReady);
-  btnFetchUrl.disabled = !(isOnline && isEngineReady);
+  btnFetchUrl.disabled = true;
   btnFetchUrl.textContent = '轉換';
   if (isEngineReady) {
     dropZone.classList.remove('drop-zone--disabled');
@@ -721,6 +723,28 @@ fileList.addEventListener('click', (e) => {
 
 btnDownloadZip.addEventListener('click', downloadAllZip);
 btnDownloadZipFooter.addEventListener('click', downloadAllZip);
+
+// URL 輸入即時計數
+urlInput.addEventListener('input', () => {
+  const lines = urlInput.value.split('\n').map(l => l.trim()).filter(Boolean);
+  const count = [...new Set(lines)].length;
+  if (count === 0) {
+    urlInputHint.textContent = `每行一個網址，最多 ${MAX_URLS} 個`;
+    urlLimitError.setAttribute('hidden', '');
+    urlInputHint.removeAttribute('hidden');
+    btnFetchUrl.disabled = true;
+  } else if (count > MAX_URLS) {
+    urlLimitError.textContent = `已輸入 ${count} 個網址，最多 ${MAX_URLS} 個`;
+    urlInputHint.setAttribute('hidden', '');
+    urlLimitError.removeAttribute('hidden');
+    btnFetchUrl.disabled = true;
+  } else {
+    urlInputHint.textContent = `已輸入 ${count} 個網址，最多 ${MAX_URLS} 個`;
+    urlLimitError.setAttribute('hidden', '');
+    urlInputHint.removeAttribute('hidden');
+    btnFetchUrl.disabled = false;
+  }
+});
 
 // URL 批次抓取
 btnFetchUrl.addEventListener('click', () => {
@@ -769,7 +793,8 @@ async function checkConnectivity() {
     urlOfflineHint.setAttribute('hidden', '');
     if (isEngineReady) {
       urlInput.disabled = false;
-      btnFetchUrl.disabled = false;
+      // 按鈕依 textarea 內容決定，觸發 input 事件重新判斷
+      urlInput.dispatchEvent(new Event('input'));
     }
   } catch {
     isOnline = false;
