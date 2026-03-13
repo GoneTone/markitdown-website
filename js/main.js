@@ -496,9 +496,11 @@ function createFileItemEl(item) {
       ? escapeHtml(item.errorMessage)
       : item.status === 'fetching'
         ? '抓取中...'
-        : item.status === 'queued'
-          ? '排隊中'
-          : '';
+        : item.status === 'converting'
+          ? '轉換中...'
+          : item.status === 'queued'
+            ? '排隊中'
+            : '';
 
   const isDone = item.status === 'done';
   const previewLabel = item.expanded ? '收起' : '預覽';
