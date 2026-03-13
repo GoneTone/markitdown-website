@@ -535,6 +535,7 @@ body {
 .file-item--done .file-item__icon  { color: #27ae60; }
 .file-item--error .file-item__icon { color: #e74c3c; }
 .file-item--waiting .file-item__icon { color: var(--color-muted); }
+.file-item--fetching .file-item__icon { color: var(--color-muted); }
 
 .file-item__name {
   flex: 1;

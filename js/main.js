@@ -55,6 +55,7 @@ let isEngineReady = false;
 let isOnline      = false;
 let fileQueue    = [];   // FileItem[]
 let currentIndex = -1;  // 目前正在轉換的索引
+let currentFetchController = null; // URL 抓取的 AbortController
 
 function createWorker() {
   worker = new Worker('/js/converter.worker.js');
@@ -262,15 +263,40 @@ async function fetchAndConvert(urlString) {
     return;
   }
 
-  // UI 狀態：抓取中（同時禁止文件上傳）
-  urlInput.disabled = true;
-  btnFetchUrl.disabled = true;
-  btnFetchUrl.textContent = '抓取中...';
-  dropZone.classList.add('drop-zone--disabled');
-  fileInput.disabled = true;
+  // 取消前一次尚未完成的抓取（防禦性）
+  currentFetchController?.abort();
+  currentFetchController = new AbortController();
+
+  // 立即建立 FileItem 並切換到列表頁
+  const item = {
+    id: crypto.randomUUID(),
+    file: null,
+    arrayBuffer: null,
+    filename: urlString,
+    status: 'fetching',
+    errorMessage: '',
+    markdown: '',
+    charCount: 0,
+    lineCount: 0,
+    duration: 0,
+    _startTime: 0,
+    expanded: false,
+  };
+
+  fileQueue = [item];
+  currentIndex = -1;
+  urlInput.value = '';
+  showState(STATES.LIST);
+  renderFileList();
 
   try {
-    const response = await fetch(`/api/fetch-url?url=${encodeURIComponent(urlString)}`);
+    const response = await fetch(
+      `/api/fetch-url?url=${encodeURIComponent(urlString)}`,
+      { signal: currentFetchController.signal }
+    );
+
+    // 檢查 item 是否仍在佇列中（使用者可能已按重新開始）
+    if (!fileQueue.includes(item)) return;
 
     if (!response.ok) {
       let errMsg = `抓取失敗（${response.status}）`;
@@ -278,7 +304,10 @@ async function fetchAndConvert(urlString) {
         const errData = await response.json();
         if (errData.error) errMsg = errData.error;
       } catch { /* ignore parse error */ }
-      showError(errMsg);
+      item.status = 'error';
+      item.errorMessage = errMsg;
+      updateFileItem(item);
+      updateListHeader();
       return;
     }
 
@@ -289,49 +318,33 @@ async function fetchAndConvert(urlString) {
     const filename = generateFilename(urlString, mimeType, pageTitle);
 
     if (!filename) {
-      showError(`不支援的內容類型：${mimeType || '未知'}`);
+      item.status = 'error';
+      item.errorMessage = `不支援的內容類型：${mimeType || '未知'}`;
+      updateFileItem(item);
+      updateListHeader();
       return;
     }
 
     const arrayBuffer = await response.arrayBuffer();
 
-    // 建立虛擬 FileItem
-    const seen = new Set(fileQueue.map(i => i.filename));
-    const dedupedFilename = deduplicateFilename(filename, seen);
+    // 再次檢查 item 是否仍在佇列中
+    if (!fileQueue.includes(item)) return;
 
-    const item = {
-      id: crypto.randomUUID(),
-      file: null,
-      arrayBuffer,
-      filename: dedupedFilename,
-      status: 'waiting',
-      errorMessage: '',
-      markdown: '',
-      charCount: 0,
-      lineCount: 0,
-      duration: 0,
-      _startTime: 0,
-      expanded: false,
-    };
-
-    // 新佇列
-    fileQueue = [item];
-    currentIndex = -1;
-    showState(STATES.LIST);
-    renderFileList();
+    // 更新 FileItem 並進入轉換流程
+    item.filename = deduplicateFilename(filename, new Set(fileQueue.filter(i => i !== item).map(i => i.filename)));
+    item.arrayBuffer = arrayBuffer;
+    item.status = 'waiting';
+    updateFileItem(item);
     processNextFile();
   } catch (err) {
-    showError(`抓取時發生錯誤：${err.message}`);
+    if (err.name === 'AbortError') return;
+    if (!fileQueue.includes(item)) return;
+    item.status = 'error';
+    item.errorMessage = `抓取時發生錯誤：${err.message}`;
+    updateFileItem(item);
+    updateListHeader();
   } finally {
-    // 恢復 UI 狀態
-    urlInput.disabled = !(isEngineReady && isOnline);
-    btnFetchUrl.disabled = !(isEngineReady && isOnline);
-    btnFetchUrl.textContent = '轉換';
-    urlInput.value = '';
-    if (isEngineReady) {
-      dropZone.classList.remove('drop-zone--disabled');
-    }
-    fileInput.disabled = false;
+    currentFetchController = null;
   }
 }
 
@@ -434,7 +447,7 @@ function createFileItemEl(item) {
   li.className = `file-item file-item--${item.status}`;
   li.dataset.id = item.id;
 
-  const iconContent = item.status === 'converting'
+  const iconContent = (item.status === 'converting' || item.status === 'fetching')
     ? '<div class="spinner-small"></div>'
     : '';
 
@@ -442,7 +455,9 @@ function createFileItemEl(item) {
     ? `${item.charCount.toLocaleString()} 字 · ${(item.duration / 1000).toFixed(1)}s`
     : item.status === 'error'
       ? escapeHtml(item.errorMessage)
-      : '';
+      : item.status === 'fetching'
+        ? '抓取中...'
+        : '';
 
   const isDone = item.status === 'done';
   const previewLabel = item.expanded ? '收起' : '預覽';
@@ -483,7 +498,7 @@ function updateListHeader() {
   const done   = fileQueue.filter(i => i.status === 'done').length;
   const failed = fileQueue.filter(i => i.status === 'error').length;
 
-  const isProcessing = fileQueue.some(i => i.status === 'converting' || i.status === 'waiting');
+  const isProcessing = fileQueue.some(i => i.status === 'fetching' || i.status === 'converting' || i.status === 'waiting');
   const failedNote = failed > 0 ? `（${failed} 個失敗）` : '';
   const progressText = `${done} / ${total} 完成${failedNote}`;
   listProgressText.textContent = progressText;
@@ -606,6 +621,8 @@ fileInput.addEventListener('change', () => {
 
 /** 重置所有狀態，回到初始上傳畫面 */
 function resetToUpload() {
+  currentFetchController?.abort();
+  currentFetchController = null;
   fileQueue = [];
   currentIndex = -1;
   fileList.innerHTML = '';
@@ -614,6 +631,11 @@ function resetToUpload() {
   dismissError();
   urlInput.disabled = !(isOnline && isEngineReady);
   btnFetchUrl.disabled = !(isOnline && isEngineReady);
+  btnFetchUrl.textContent = '轉換';
+  if (isEngineReady) {
+    dropZone.classList.remove('drop-zone--disabled');
+  }
+  fileInput.disabled = false;
   showState(STATES.UPLOAD);
 }
 
