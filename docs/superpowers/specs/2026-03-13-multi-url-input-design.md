@@ -28,6 +28,7 @@
 - `.url-input` 樣式調整：`min-height: 80px`、`resize: vertical`、`line-height: 1.6`、`font-family: inherit`
 - 按鈕與提示文字的容器使用 `display: flex; justify-content: space-between`
 - 新增超過上限錯誤提示的樣式
+- 新增 `.file-item--queued` 樣式（與 `waiting` 類似，無 spinner，顯示排隊等待的視覺狀態）
 
 ### 互動行為
 
@@ -63,13 +64,15 @@
 現有的 `fetchAndConvert(url)` 處理單一 URL。重構為 `fetchAndConvertMultiple(urlEntries)` 處理多個：
 
 1. **建立 FileItem 陣列**：為每個 URL entry 建立 FileItem
-   - 有效 URL：狀態設為 `waiting`，`filename` 暫時設為原始 URL 字串
-   - 無效 URL：狀態立即設為 `error`，`filename` 設為原始輸入文字，顯示「網址格式無效」
+   - 有效 URL：狀態設為 `queued`（新狀態，表示排隊等待 fetch），`filename` 暫時設為原始 URL 字串
+   - 無效 URL：狀態立即設為 `error`，`filename` 設為原始輸入文字，顯示「網址格式無效」（不計算 duration）
    - `_startTime`：在該項目實際開始 fetch 時才設定（非建立時），確保計時反映真實處理時間
+   - **重要**：`queued` 與 `waiting` 的區別——`queued` 表示尚未 fetch（無資料），`waiting` 表示 fetch 完成待轉換（有資料）。`processNextFile()` 只處理 `waiting` 狀態的項目，不會誤取 `queued` 項目
 2. **切換到列表視圖**：清空舊 `fileQueue`，加入所有 FileItem，`currentIndex = -1`，切換到 `STATES.LIST`
-3. **清空 textarea**
-4. **逐一抓取有效的 URL**：async 迴圈，依序處理每個有效的 FileItem：
-   - 將該項目狀態改為 `fetching`（帶 spinner），更新 DOM
+3. **清空 textarea**（使用者無法回頭修改無效 URL，與檔案上傳行為一致）
+4. **逐一抓取有效的 URL**：async 迴圈，依序處理每個 `queued` 狀態的 FileItem：
+   - 迴圈開頭先檢查 `signal.aborted`，若已取消則跳出（項目保持 `queued` 狀態，不更新為 `fetching`）
+   - 將該項目狀態從 `queued` 改為 `fetching`（帶 spinner），設定 `_startTime = Date.now()`，更新 DOM
    - 發送 `GET /api/fetch-url?url=<encoded>` 請求
    - 成功：更新 filename（從 `x-page-title` + content-type 推斷）、存入 `arrayBuffer`、狀態改 `waiting`
    - 失敗：狀態改 `error`，顯示錯誤訊息（不中斷迴圈）
