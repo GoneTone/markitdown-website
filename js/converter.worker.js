@@ -48,10 +48,28 @@ async function initialize() {
       throw new Error('wheels/manifest.json 為空，請重新執行建置腳本');
     }
 
-    sendProgress(`正在安裝 ${manifest.length} 個套件...`, 65);
+    sendProgress(`正在驗證 ${manifest.length} 個套件...`, 65);
+    // 預先驗證所有 wheel 檔案是否可用，避免 micropip.install() 遇到 404 靜默掛住
+    const wheelUrls = manifest.map(f => `/wheels/${f}`);
+    const checks = await Promise.all(
+      wheelUrls.map(url => fetch(url, { method: 'HEAD' })
+        .then(r => ({ url, ok: r.ok, status: r.status }))
+        .catch(() => ({ url, ok: false, status: '無法連線' }))
+      )
+    );
+    const missing = checks.filter(c => !c.ok);
+    if (missing.length > 0) {
+      const names = missing.map(c => `  - ${c.url.split('/').pop()}（${c.status}）`).join('\n');
+      throw new Error(
+        `以下套件檔案無法載入：\n${names}\n\n` +
+        '這通常是瀏覽器快取了舊版套件清單所致，請清除本站的瀏覽器快取後重新整理頁面。'
+      );
+    }
+
+    sendProgress(`正在安裝 ${manifest.length} 個套件...`, 68);
     // 用 Python 執行安裝，加上 deps=False 跳過 PyPI 依賴解析。
     // markitdown 依賴 magika（平台相依，無 WASM 版），故以下注入 stub 取代。
-    const wheelUrlList = manifest.map(f => `"/wheels/${f}"`).join(', ');
+    const wheelUrlList = wheelUrls.map(u => `"${u}"`).join(', ');
     await pyodide.runPythonAsync(`
 import micropip
 await micropip.install([${wheelUrlList}], deps=False)
@@ -105,7 +123,7 @@ print("MarkItDown 初始化成功")
   } catch (err) {
     self.postMessage({
       type: 'error',
-      message: `初始化失敗：${err.message}\n\n請確認建置腳本已成功執行，且瀏覽器支援 WebAssembly。`,
+      message: err.message,
     });
   }
 }

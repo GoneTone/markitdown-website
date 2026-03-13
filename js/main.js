@@ -105,21 +105,29 @@ function createWorker() {
       }
 
       case 'error': {
-        const item = fileQueue[currentIndex];
-        if (item) {
-          item.status = 'error';
-          item.errorMessage = message || '轉換失敗';
-          updateFileItem(item);
-          updateListHeader();
+        if (!isEngineReady) {
+          // 初始化階段的錯誤：顯示全域錯誤訊息
+          showError(message || '未知錯誤', '初始化失敗');
+          setEngineStatus('error', '引擎錯誤');
+          document.getElementById('upload-engine-status').hidden = true;
+        } else {
+          // 轉換階段的錯誤：更新對應檔案項目
+          const item = fileQueue[currentIndex];
+          if (item) {
+            item.status = 'error';
+            item.errorMessage = message || '轉換失敗';
+            updateFileItem(item);
+            updateListHeader();
+          }
+          processNextFile();
         }
-        processNextFile();
         break;
       }
     }
   };
 
   worker.onerror = (err) => {
-    showError(`Worker 發生錯誤：${err.message}`);
+    showError(`Worker 發生錯誤：${err.message}`, '初始化失敗');
     setEngineStatus('error', '引擎錯誤');
     document.getElementById('upload-engine-status').hidden = true;
     showState(STATES.UPLOAD);
@@ -515,7 +523,8 @@ async function downloadAllZip() {
 
 // ── 錯誤顯示 ──────────────────────────────────────────────────────────────
 
-function showError(message) {
+function showError(message, title = '轉換失敗') {
+  document.getElementById('error-title').textContent = title;
   errorMessage.textContent = message;
   errorBanner.removeAttribute('hidden');
 }

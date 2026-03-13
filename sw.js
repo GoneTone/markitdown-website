@@ -10,10 +10,10 @@
  * 更新方式：修改 CACHE_VERSION 即可強制所有客戶端清除舊快取。
  */
 
-const CACHE_VERSION = 'v9';
+const CACHE_VERSION = 'v10';
 
 // 靜態資源版本號：與 index.html 的 APP_VERSION 保持一致
-const APP_VERSION = '1.3.1';
+const APP_VERSION = '1.3.2';
 
 const CACHE_NAMES = {
   ui:      `ui-${CACHE_VERSION}`,
@@ -108,11 +108,15 @@ async function cacheFirst(request, cacheName) {
   const cached = await cache.match(request);
   if (cached) return cached;
 
-  const response = await fetch(request);
-  if (response.ok) {
-    cache.put(request, response.clone()).catch(() => {});
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      cache.put(request, response.clone()).catch(() => {});
+    }
+    return response;
+  } catch {
+    return new Response('Network error', { status: 503 });
   }
-  return response;
 }
 
 /**
