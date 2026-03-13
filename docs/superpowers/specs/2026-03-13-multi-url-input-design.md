@@ -83,7 +83,7 @@
 
 - 在 `fetchAndConvertMultiple` 開頭建立單一 `currentFetchController = new AbortController()`
 - 所有 fetch 請求共用同一個 `signal`
-- 「重新開始」按鈕呼叫 `resetToUpload()` 時 abort，所有尚未完成的 fetch 取消
+- 二次提交時 abort 當前批次（見「二次提交處理」段落）
 - 尚未開始的 fetch（還在迴圈中等待前一個完成）在迴圈開頭檢查 `signal.aborted`，若已取消則跳出迴圈（不再呼叫 `processNextFile()`）
 - **重要**：`currentFetchController` 在整個 async 迴圈結束後才設為 `null`（不是每個 fetch 完成後就清除，與現有單一 URL 的 `finally` 模式不同）
 
@@ -95,8 +95,8 @@
 
 ### 「重新開始」按鈕
 
-- 在多 URL 處理期間，「重新開始」按鈕必須保持 enabled（現有邏輯在 `isProcessing` 時會 disable，需調整）
-- 點擊後 abort 所有 fetch、清空佇列、回到上傳頁
+- 處理期間（含 `queued`、`fetching`、`converting`、`waiting`）一律禁用，與下載按鈕行為一致，維持現有邏輯不變
+- 全部處理完成後啟用，點擊後清空佇列、回到上傳頁
 
 ### updateListHeader 調整
 
@@ -118,7 +118,7 @@
 | Rate limit 429 | 該項目 `error`，顯示「請求過於頻繁，請稍後再試」，繼續下一個 |
 | Content-type 不支援 | 沿用 server 端驗證，該項目 `error`，繼續下一個 |
 | Server 503（容量已滿） | 該項目 `error`，顯示「伺服器忙碌中，請稍後再試」，繼續下一個 |
-| 使用者按「重新開始」 | abort 所有 fetch，清空佇列，回到上傳頁 |
+| 使用者按「重新開始」 | 處理中禁用；全部完成後可點擊，清空佇列回到上傳頁 |
 
 ## 向下相容
 
