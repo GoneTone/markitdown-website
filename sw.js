@@ -85,7 +85,12 @@ self.addEventListener('fetch', (event) => {
 
   if (path.startsWith('/pyodide/')) {
     event.respondWith(cacheFirst(request, CACHE_NAMES.pyodide));
-  } else if (path.startsWith('/wheels/') && !path.endsWith('/manifest.json')) {
+  } else if (path.endsWith('/manifest.json') && path.startsWith('/wheels/')) {
+    // manifest.json 隨部署更新，使用 stale-while-revalidate。
+    // 前端以時間戳破壞 HTTP 快取（?_t=…），但 SW 快取用不帶查詢參數的
+    // URL 作為 key，確保離線時仍能命中快取。
+    event.respondWith(staleWhileRevalidateStripQuery(request, CACHE_NAMES.ui));
+  } else if (path.startsWith('/wheels/')) {
     event.respondWith(cacheFirst(request, CACHE_NAMES.wheels));
   } else {
     event.respondWith(staleWhileRevalidate(request, CACHE_NAMES.ui));
@@ -108,6 +113,26 @@ async function cacheFirst(request, cacheName) {
     cache.put(request, response.clone()).catch(() => {});
   }
   return response;
+}
+
+/**
+ * Stale-while-revalidate（忽略查詢參數）：
+ * 快取 key 使用不帶查詢參數的 URL，網路請求保留原始 URL（含時間戳）。
+ * 適用於 manifest.json 等需要破壞 HTTP 快取但仍需離線可用的資源。
+ */
+async function staleWhileRevalidateStripQuery(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cacheKey = new Request(new URL(request.url).pathname, { method: request.method });
+  const cached = await cache.match(cacheKey);
+
+  const networkFetch = fetch(request).then((response) => {
+    if (response.ok) {
+      cache.put(cacheKey, response.clone()).catch(() => {});
+    }
+    return response;
+  }).catch(() => null);
+
+  return cached ?? await networkFetch ?? new Response('Offline', { status: 503 });
 }
 
 /**

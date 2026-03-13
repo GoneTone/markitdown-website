@@ -38,7 +38,7 @@ async function initialize() {
     await pyodide.loadPackage(['micropip', 'charset-normalizer', 'pandas', 'lxml', 'pillow', 'cryptography']);
 
     sendProgress('正在讀取套件清單...', 62);
-    const response = await fetch('/wheels/manifest.json');
+    const response = await fetch(`/wheels/manifest.json?_t=${Date.now()}`);
     if (!response.ok) {
       throw new Error(`無法讀取套件清單：${response.status} ${response.statusText}`);
     }
