@@ -30,7 +30,7 @@ docker compose up
 
 - **前端**（`index.html`、`css/style.css`、`js/main.js`）：單頁應用程式，兩種狀態——上傳頁面與結果頁面。支援拖放上傳與網址輸入。
 - **Web Worker**（`js/converter.worker.js`）：在背景執行緒中執行 Pyodide + markitdown。透過 `postMessage` 與主執行緒通訊。使用 `micropip` 搭配 `deps=False` 從 `wheels/manifest.json` 載入 wheel。
-- **Node.js 代理**（`server/index.js`、`server/fetch-url.js`）：Express 伺服器，監聽 port 3002。提供 `POST /api/fetch-url`，含 SSRF 防護、10MB 大小限制、15 秒逾時及速率限制。
+- **Node.js 代理**（`server/index.js`、`server/fetch-url.js`）：Express 伺服器，監聽 port 3002。提供 `POST /api/fetch-url`，含 SSRF 防護、50MB 大小限制、60 秒逾時及速率限制。
 - **Nginx**：提供靜態檔案服務，並將 `/api/` 反向代理至 Node.js。需設定 COOP/COEP 標頭以啟用 SharedArrayBuffer。
 - **Service Worker**（`sw.js`）：離線快取——UI 資源使用 stale-while-revalidate，pyodide/wheels 使用 cache-first。修改 `CACHE_VERSION` 即可強制清除舊快取。
 - **Docker**（`Dockerfile`）：三階段建置（Python builder → Node 依賴 → Alpine runner，含 nginx + node）。

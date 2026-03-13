@@ -328,7 +328,7 @@ async function fetchAndConvertMultiple(urlEntries) {
 
     try {
       const itemController = new AbortController();
-      const fetchTimer = setTimeout(() => itemController.abort(), 20000);
+      const fetchTimer = setTimeout(() => itemController.abort(), 90000);
       // 批次取消時也取消單一請求
       const onBatchAbort = () => itemController.abort();
       signal.addEventListener('abort', onBatchAbort, { once: true });

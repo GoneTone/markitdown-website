@@ -12,8 +12,8 @@ const dns = require('node:dns/promises');
 const { ensureBrowser, isDirectDownloadType, DIRECT_DOWNLOAD_TYPES } = require('./browser');
 const { pageSemaphore } = require('./semaphore-instance');
 
-const MAX_SIZE = 10 * 1024 * 1024; // 10MB
-const TIMEOUT = 15_000; // 15 seconds
+const MAX_SIZE = 50 * 1024 * 1024; // 50MB
+const TIMEOUT = 60_000; // 60 seconds
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 MarkItDown-Proxy/1.0';
 
 // 支援轉換的 MIME type 白名單（從 DIRECT_DOWNLOAD_TYPES 衍生，加上瀏覽器可渲染的類型）
@@ -167,7 +167,7 @@ async function streamDownload(url, res) {
 
   const contentLength = parseInt(response.headers.get('content-length') || '0', 10);
   if (contentLength > MAX_SIZE) {
-    return res.status(413).json({ error: `回應過大（${Math.round(contentLength / 1024 / 1024)}MB），上限為 10MB` });
+    return res.status(413).json({ error: `回應過大（${Math.round(contentLength / 1024 / 1024)}MB），上限為 50MB` });
   }
 
   const contentType = response.headers.get('content-type') || 'application/octet-stream';
@@ -189,7 +189,7 @@ async function streamDownload(url, res) {
       if (totalSize > MAX_SIZE) {
         reader.cancel();
         if (res.headersSent) { res.destroy(); return; }
-        return res.status(413).json({ error: '回應過大，上限為 10MB' });
+        return res.status(413).json({ error: '回應過大，上限為 50MB' });
       }
       res.write(Buffer.from(value));
     }
@@ -333,7 +333,7 @@ async function fetchUrlHandler(req, res) {
     const html = await page.content();
     const htmlSize = Buffer.byteLength(html, 'utf8');
     if (htmlSize > MAX_SIZE) {
-      return res.status(413).json({ error: '回應過大，上限為 10MB' });
+      return res.status(413).json({ error: '回應過大，上限為 50MB' });
     }
 
     // 取得頁面標題供前端作為檔名
