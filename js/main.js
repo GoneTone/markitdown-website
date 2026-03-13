@@ -31,6 +31,7 @@ const urlInput         = document.getElementById('url-input');
 const btnFetchUrl      = document.getElementById('btn-fetch-url');
 const urlOfflineHint   = document.getElementById('url-offline-hint');
 const urlLimitError    = document.getElementById('url-limit-error');
+const urlInputHint     = document.getElementById('url-input-hint');
 
 // ── 狀態管理 ──────────────────────────────────────────────────────────────
 
@@ -670,6 +671,7 @@ function resetToUpload() {
   fileInput.value = '';
   dismissError();
   urlLimitError.setAttribute('hidden', '');
+  urlInputHint.removeAttribute('hidden');
   urlInput.disabled = !(isOnline && isEngineReady);
   btnFetchUrl.disabled = !(isOnline && isEngineReady);
   btnFetchUrl.textContent = '轉換';
@@ -707,12 +709,14 @@ btnFetchUrl.addEventListener('click', () => {
   const text = urlInput.value.trim();
   if (!text) return;
 
-  // 隱藏之前的上限錯誤
+  // 重置提示狀態
   urlLimitError.setAttribute('hidden', '');
+  urlInputHint.removeAttribute('hidden');
 
   const { entries, error } = parseUrls(text);
 
   if (error) {
+    urlInputHint.setAttribute('hidden', '');
     urlLimitError.textContent = error;
     urlLimitError.removeAttribute('hidden');
     return;
