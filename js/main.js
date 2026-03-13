@@ -279,7 +279,7 @@ async function fetchAndConvert(urlString) {
     charCount: 0,
     lineCount: 0,
     duration: 0,
-    _startTime: 0,
+    _startTime: Date.now(),
     expanded: false,
   };
 
@@ -533,7 +533,7 @@ function processNextFile() {
   currentIndex = nextIndex;
   const item = fileQueue[currentIndex];
   item.status = 'converting';
-  item._startTime = Date.now();
+  if (!item._startTime) item._startTime = Date.now();
   updateFileItem(item);
 
   // URL 抓取的虛擬 FileItem 已有 arrayBuffer，直接送入 Worker
