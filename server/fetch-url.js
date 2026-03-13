@@ -289,8 +289,14 @@ async function fetchUrlHandler(req, res) {
       return res.status(413).json({ error: '回應過大，上限為 10MB' });
     }
 
+    // 取得頁面標題供前端作為檔名
+    const pageTitle = await page.title();
+
     res.set('Content-Type', 'text/html; charset=utf-8');
     res.set('X-Original-Url', url.href);
+    if (pageTitle) {
+      res.set('X-Page-Title', encodeURIComponent(pageTitle));
+    }
     res.send(html);
   } catch (err) {
     if (!res.headersSent) {

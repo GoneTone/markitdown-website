@@ -157,14 +157,30 @@ function parseMimeType(contentType) {
 }
 
 /**
- * 從 URL 和 Content-Type 產生檔名
+ * 清理字串使其可作為檔名（移除檔案系統不允許的字元）
+ * @param {string} name
+ * @returns {string}
+ */
+function sanitizeFilename(name) {
+  return name.replace(/[<>:"/\\|?*\x00-\x1f]/g, '').trim();
+}
+
+/**
+ * 從 URL、Content-Type 及可選的頁面標題產生檔名
  * @param {string} urlString
  * @param {string} mimeType - 已解析的 MIME type
+ * @param {string} [pageTitle] - 頁面 <title>（可選）
  * @returns {string|null}
  */
-function generateFilename(urlString, mimeType) {
+function generateFilename(urlString, mimeType, pageTitle) {
   const ext = MIME_TO_EXT[mimeType];
   if (!ext) return null; // 不支援的類型
+
+  // 優先使用頁面標題
+  if (pageTitle) {
+    const sanitized = sanitizeFilename(pageTitle);
+    if (sanitized) return sanitized + ext;
+  }
 
   let baseName;
   try {
@@ -268,7 +284,9 @@ async function fetchAndConvert(urlString) {
 
     const contentType = response.headers.get('content-type') || '';
     const mimeType = parseMimeType(contentType);
-    const filename = generateFilename(urlString, mimeType);
+    const rawTitle = response.headers.get('x-page-title');
+    const pageTitle = rawTitle ? decodeURIComponent(rawTitle) : '';
+    const filename = generateFilename(urlString, mimeType, pageTitle);
 
     if (!filename) {
       showError(`不支援的內容類型：${mimeType || '未知'}`);
