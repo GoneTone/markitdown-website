@@ -311,6 +311,7 @@ async function fetchAndConvertMultiple(urlEntries) {
     duration: 0,
     _startTime: 0,
     expanded: false,
+    fetchProgress: null,
   }));
 
   // 切換到列表視圖
@@ -383,10 +384,46 @@ async function fetchAndConvertMultiple(urlEntries) {
         continue;
       }
 
-      const arrayBuffer = await response.arrayBuffer();
+      // ── 逐塊讀取 response body，追蹤下載進度 ──
+      const contentLength = parseInt(response.headers.get('content-length') || '0', 10);
+      item.fetchProgress = { loaded: 0, total: contentLength, percent: contentLength > 0 ? 0 : -1 };
+      if (contentLength > 0) {
+        updateFileItem(item); // 切換為確定進度模式，需重建 DOM
+      }
+
+      const reader = response.body.getReader();
+      const chunks = [];
+      let loaded = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        loaded += value.length;
+        item.fetchProgress.loaded = loaded;
+        if (contentLength > 0) {
+          item.fetchProgress.percent = Math.min(Math.round((loaded / contentLength) * 100), 100);
+        }
+        updateFetchProgress(item);
+      }
 
       // 再次檢查 item 是否仍在佇列中
       if (!fileQueue.includes(item)) continue;
+
+      // 合併 chunks 為 ArrayBuffer
+      const totalLength = chunks.reduce((sum, c) => sum + c.length, 0);
+      const merged = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const chunk of chunks) {
+        merged.set(chunk, offset);
+        offset += chunk.length;
+      }
+      const arrayBuffer = merged.buffer;
+
+      // ── 完成過渡：顯示 100% 停留 0.5 秒 ──
+      item.fetchProgress.percent = 100;
+      updateFetchProgress(item);
+      await new Promise(r => setTimeout(r, 500));
 
       // 更新 FileItem 並進入轉換流程
       const usedNames = new Set(fileQueue.filter(i => i !== item).map(i => i.filename));
@@ -524,6 +561,28 @@ function createFileItemEl(item) {
             ? '排隊中'
             : '';
 
+  const CIRCUMFERENCE = 2 * Math.PI * 11; // r=11, ≈ 69.115
+  let progressRingHtml = '';
+  if (item.status === 'fetching') {
+    const p = item.fetchProgress;
+    const percent = p ? p.percent : -1;
+    const isIndeterminate = percent < 0;
+    const offset = isIndeterminate ? 0 : CIRCUMFERENCE * (1 - percent / 100);
+    const dasharray = isIndeterminate ? '25 44' : CIRCUMFERENCE.toFixed(2);
+    const pctText = isIndeterminate ? '' : `${percent}%`;
+    progressRingHtml = `
+      <span class="progress-ring${isIndeterminate ? ' progress-ring--indeterminate' : ''}">
+        <svg width="28" height="28" viewBox="0 0 28 28">
+          <circle class="progress-ring__track" cx="14" cy="14" r="11"
+            fill="none" stroke="var(--color-border)" stroke-width="2.5"/>
+          <circle class="progress-ring__bar" cx="14" cy="14" r="11"
+            fill="none" stroke="var(--color-highlight)" stroke-width="2.5" stroke-linecap="round"
+            stroke-dasharray="${dasharray}" stroke-dashoffset="${offset.toFixed(2)}"/>
+        </svg>
+        <span class="progress-ring__pct">${pctText}</span>
+      </span>`;
+  }
+
   const isDone = item.status === 'done';
   const previewLabel = item.expanded ? '收起' : '預覽';
   const previewContent = item.expanded ? escapeHtml(item.markdown) : '';
@@ -532,7 +591,7 @@ function createFileItemEl(item) {
     <div class="file-item__row">
       <span class="file-item__icon" aria-hidden="true">${iconContent}</span>
       <span class="file-item__name" title="${escapeHtml(safeDecodeURI(item.filename))}">${escapeHtml(safeDecodeURI(item.filename))}</span>
-      <span class="file-item__meta">${metaText}</span>
+      <span class="file-item__meta">${metaText}${progressRingHtml}</span>
       <button class="file-item__btn-preview" type="button"${isDone ? '' : ' hidden'}>${previewLabel}</button>
       <button class="file-item__btn-download" type="button"${isDone ? '' : ' hidden'}>下載</button>
     </div>
@@ -556,6 +615,30 @@ function updateFileItem(item) {
   } else {
     fileList.appendChild(newEl);
   }
+}
+
+/**
+ * 輕量更新抓取進度 — 只修改 SVG 屬性和百分比文字，不重建 DOM。
+ * @param {Object} item - FileItem
+ */
+function updateFetchProgress(item) {
+  const el = fileList.querySelector(`[data-id="${item.id}"]`);
+  if (!el) return;
+  const ring = el.querySelector('.progress-ring');
+  const bar = el.querySelector('.progress-ring__bar');
+  const pct = el.querySelector('.progress-ring__pct');
+  if (!ring || !bar || !pct) return;
+
+  const p = item.fetchProgress;
+  if (!p || p.percent < 0) return;
+
+  const CIRCUMFERENCE = 2 * Math.PI * 11;
+  if (ring.classList.contains('progress-ring--indeterminate')) {
+    ring.classList.remove('progress-ring--indeterminate');
+    bar.setAttribute('stroke-dasharray', CIRCUMFERENCE.toFixed(2));
+  }
+  bar.style.strokeDashoffset = (CIRCUMFERENCE * (1 - p.percent / 100)).toFixed(2);
+  pct.textContent = `${p.percent}%`;
 }
 
 function updateListHeader() {

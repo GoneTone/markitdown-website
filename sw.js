@@ -9,10 +9,10 @@
  * 更新方式：修改 CACHE_VERSION 即可強制所有客戶端清除舊快取。
  */
 
-const CACHE_VERSION = 'v7';
+const CACHE_VERSION = 'v8';
 
 // 靜態資源版本號：與 index.html 的 APP_VERSION 保持一致
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.3.0';
 
 const CACHE_NAMES = {
   ui:      `ui-${CACHE_VERSION}`,

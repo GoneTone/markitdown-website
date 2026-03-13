@@ -178,6 +178,9 @@ async function streamDownload(url, res) {
   }
   res.set('Content-Type', contentType);
   res.set('X-Original-Url', url.href);
+  if (contentLength > 0) {
+    res.set('Content-Length', contentLength);
+  }
 
   try {
     const reader = response.body.getReader();
