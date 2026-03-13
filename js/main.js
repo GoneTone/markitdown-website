@@ -30,6 +30,7 @@ const btnRestartFooter      = document.getElementById('btn-restart-footer');
 const urlInput         = document.getElementById('url-input');
 const btnFetchUrl      = document.getElementById('btn-fetch-url');
 const urlOfflineHint   = document.getElementById('url-offline-hint');
+const urlLimitError    = document.getElementById('url-limit-error');
 
 // ── 狀態管理 ──────────────────────────────────────────────────────────────
 
@@ -280,99 +281,109 @@ function createFileItem(file, existingNames = new Set()) {
 }
 
 /**
- * 從 URL 抓取內容並建立虛擬 FileItem 送入轉換佇列
- * @param {string} urlString
+ * 從多個 URL 逐一抓取內容並建立虛擬 FileItem 送入轉換佇列
+ * @param {Array<{url: string, valid: boolean}>} urlEntries
  */
-async function fetchAndConvert(urlString) {
-  // 前端驗證
-  if (!/^https?:\/\//i.test(urlString)) {
-    showError('請輸入有效的網址（以 http:// 或 https:// 開頭）');
-    return;
-  }
-
-  // 取消前一次尚未完成的抓取（防禦性）
+async function fetchAndConvertMultiple(urlEntries) {
+  // 取消前一次尚未完成的批次（防禦性）
   currentFetchController?.abort();
   currentFetchController = new AbortController();
+  const signal = currentFetchController.signal;
 
-  // 立即建立 FileItem 並切換到列表頁
-  const item = {
+  // 建立所有 FileItem
+  const items = urlEntries.map(entry => ({
     id: crypto.randomUUID(),
     file: null,
     arrayBuffer: null,
-    filename: urlString,
-    status: 'fetching',
-    errorMessage: '',
+    filename: entry.url,
+    status: entry.valid ? 'queued' : 'error',
+    errorMessage: entry.valid ? '' : '網址格式無效',
     markdown: '',
     charCount: 0,
     lineCount: 0,
     duration: 0,
-    _startTime: Date.now(),
+    _startTime: 0,
     expanded: false,
-  };
+  }));
 
-  fileQueue = [item];
+  // 切換到列表視圖
+  fileQueue = items;
   currentIndex = -1;
   urlInput.value = '';
   showState(STATES.LIST);
   renderFileList();
 
-  try {
-    const response = await fetch(
-      `/api/fetch-url?url=${encodeURIComponent(urlString)}`,
-      { signal: currentFetchController.signal }
-    );
+  // 逐一抓取有效的 URL
+  for (const item of items) {
+    if (item.status !== 'queued') continue;
+    if (signal.aborted) break;
 
-    // 檢查 item 是否仍在佇列中（使用者可能已按重新開始）
-    if (!fileQueue.includes(item)) return;
-
-    if (!response.ok) {
-      let errMsg = `抓取失敗（${response.status}）`;
-      try {
-        const errData = await response.json();
-        if (errData.error) errMsg = errData.error;
-      } catch { /* ignore parse error */ }
-      item.status = 'error';
-      item.errorMessage = errMsg;
-      updateFileItem(item);
-      updateListHeader();
-      return;
-    }
-
-    const contentType = response.headers.get('content-type') || '';
-    const mimeType = parseMimeType(contentType);
-    const rawTitle = response.headers.get('x-page-title');
-    const pageTitle = rawTitle ? decodeURIComponent(rawTitle) : '';
-    const filename = generateFilename(urlString, mimeType, pageTitle);
-
-    if (!filename) {
-      item.status = 'error';
-      item.errorMessage = `不支援的內容類型：${mimeType || '未知'}`;
-      updateFileItem(item);
-      updateListHeader();
-      return;
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-
-    // 再次檢查 item 是否仍在佇列中
-    if (!fileQueue.includes(item)) return;
-
-    // 更新 FileItem 並進入轉換流程
-    item.filename = deduplicateFilename(filename, new Set(fileQueue.filter(i => i !== item).map(i => i.filename)));
-    item.arrayBuffer = arrayBuffer;
-    item.status = 'waiting';
-    updateFileItem(item);
-    processNextFile();
-  } catch (err) {
-    if (err.name === 'AbortError') return;
-    if (!fileQueue.includes(item)) return;
-    item.status = 'error';
-    item.errorMessage = `抓取時發生錯誤：${err.message}`;
+    // 更新為 fetching 狀態
+    item.status = 'fetching';
+    item._startTime = Date.now();
     updateFileItem(item);
     updateListHeader();
-  } finally {
-    currentFetchController = null;
+
+    try {
+      const response = await fetch(
+        `/api/fetch-url?url=${encodeURIComponent(item.filename)}`,
+        { signal }
+      );
+
+      // 檢查 item 是否仍在佇列中
+      if (!fileQueue.includes(item)) continue;
+
+      if (!response.ok) {
+        let errMsg = `抓取失敗（${response.status}）`;
+        try {
+          const errData = await response.json();
+          if (errData.error) errMsg = errData.error;
+        } catch { /* ignore parse error */ }
+        item.status = 'error';
+        item.errorMessage = errMsg;
+        updateFileItem(item);
+        updateListHeader();
+        continue;
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+      const mimeType = parseMimeType(contentType);
+      const rawTitle = response.headers.get('x-page-title');
+      const pageTitle = rawTitle ? decodeURIComponent(rawTitle) : '';
+      const filename = generateFilename(item.filename, mimeType, pageTitle);
+
+      if (!filename) {
+        item.status = 'error';
+        item.errorMessage = `不支援的內容類型：${mimeType || '未知'}`;
+        updateFileItem(item);
+        updateListHeader();
+        continue;
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+
+      // 再次檢查 item 是否仍在佇列中
+      if (!fileQueue.includes(item)) continue;
+
+      // 更新 FileItem 並進入轉換流程
+      const usedNames = new Set(fileQueue.filter(i => i !== item).map(i => i.filename));
+      item.filename = deduplicateFilename(filename, usedNames);
+      item.arrayBuffer = arrayBuffer;
+      item.status = 'waiting';
+      updateFileItem(item);
+      processNextFile();
+    } catch (err) {
+      if (err.name === 'AbortError') break;
+      if (!fileQueue.includes(item)) continue;
+      item.status = 'error';
+      item.errorMessage = `抓取時發生錯誤：${err.message}`;
+      updateFileItem(item);
+      updateListHeader();
+    }
   }
+
+  // 整個迴圈結束後才清除 controller
+  currentFetchController = null;
 }
 
 /**
