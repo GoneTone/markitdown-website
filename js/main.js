@@ -565,7 +565,7 @@ function renderFileList() {
  */
 function processNextFile() {
   const nextIndex = fileQueue.findIndex(
-    (item, i) => i > currentIndex && (item.status === 'waiting' || item.status === 'queued')
+    (item, i) => i > currentIndex && (item.status === 'waiting' || (item.status === 'queued' && item.file))
   );
 
   if (nextIndex === -1) {
