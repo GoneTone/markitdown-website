@@ -23,3 +23,6 @@ Thumbs.db
 # 設定檔
 .claude/settings.local.json
 .idea/
+
+# Superpowers brainstorm artifacts
+.superpowers/
