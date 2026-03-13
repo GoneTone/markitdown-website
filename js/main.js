@@ -132,6 +132,11 @@ function setEngineStatus(state, text) {
   engineStatusText.textContent = text;
 }
 
+/** 安全解碼 URI，失敗時回傳原始字串 */
+function safeDecodeURI(str) {
+  try { return decodeURIComponent(str); } catch { return str; }
+}
+
 // ── 檔案處理 ──────────────────────────────────────────────────────────────
 
 const SUPPORTED_EXTENSIONS = new Set([
@@ -433,7 +438,7 @@ function handleFiles(files) {
  * @param {Object} item - FileItem (status === 'done')
  */
 function downloadFile(item) {
-  const filename = item.filename.replace(/\.[^.]+$/, '.md');
+  const filename = safeDecodeURI(item.filename).replace(/\.[^.]+$/, '.md');
   const blob = new Blob([item.markdown], { type: 'text/markdown;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -450,7 +455,7 @@ async function downloadAllZip() {
 
   const zip = new JSZip();
   doneItems.forEach(item => {
-    const filename = item.filename.replace(/\.[^.]+$/, '.md');
+    const filename = safeDecodeURI(item.filename).replace(/\.[^.]+$/, '.md');
     zip.file(filename, item.markdown);
   });
 
@@ -526,7 +531,7 @@ function createFileItemEl(item) {
   li.innerHTML = `
     <div class="file-item__row">
       <span class="file-item__icon" aria-hidden="true">${iconContent}</span>
-      <span class="file-item__name" title="${escapeHtml(item.filename)}">${escapeHtml(item.filename)}</span>
+      <span class="file-item__name" title="${escapeHtml(safeDecodeURI(item.filename))}">${escapeHtml(safeDecodeURI(item.filename))}</span>
       <span class="file-item__meta">${metaText}</span>
       <button class="file-item__btn-preview" type="button"${isDone ? '' : ' hidden'}>${previewLabel}</button>
       <button class="file-item__btn-download" type="button"${isDone ? '' : ' hidden'}>下載</button>
