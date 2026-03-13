@@ -280,7 +280,7 @@ async function fetchUrlHandler(req, res) {
       }
       // chrome-headless-shell 無法處理 PDF 等二進位內容，會觸發 ERR_ABORTED
       // 降級為 streamDownload 直接下載
-      if (err.message.includes('net::ERR_ABORTED')) {
+      if (err.message.includes('net::ERR_ABORTED') || err.message.includes('net::ERR_HTTP2_PROTOCOL_ERROR')) {
         await page.close();
         page = null;
         return streamDownload(url, res);
