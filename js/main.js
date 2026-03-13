@@ -495,7 +495,9 @@ function createFileItemEl(item) {
       ? escapeHtml(item.errorMessage)
       : item.status === 'fetching'
         ? '抓取中...'
-        : '';
+        : item.status === 'queued'
+          ? '排隊中'
+          : '';
 
   const isDone = item.status === 'done';
   const previewLabel = item.expanded ? '收起' : '預覽';
@@ -536,7 +538,7 @@ function updateListHeader() {
   const done   = fileQueue.filter(i => i.status === 'done').length;
   const failed = fileQueue.filter(i => i.status === 'error').length;
 
-  const isProcessing = fileQueue.some(i => i.status === 'fetching' || i.status === 'converting' || i.status === 'waiting');
+  const isProcessing = fileQueue.some(i => i.status === 'queued' || i.status === 'fetching' || i.status === 'converting' || i.status === 'waiting');
   const failedNote = failed > 0 ? `（${failed} 個失敗）` : '';
   const progressText = `${done} / ${total} 完成${failedNote}`;
   listProgressText.textContent = progressText;
@@ -667,6 +669,7 @@ function resetToUpload() {
   urlInput.value = '';
   fileInput.value = '';
   dismissError();
+  urlLimitError.setAttribute('hidden', '');
   urlInput.disabled = !(isOnline && isEngineReady);
   btnFetchUrl.disabled = !(isOnline && isEngineReady);
   btnFetchUrl.textContent = '轉換';
@@ -699,18 +702,25 @@ fileList.addEventListener('click', (e) => {
 btnDownloadZip.addEventListener('click', downloadAllZip);
 btnDownloadZipFooter.addEventListener('click', downloadAllZip);
 
-// URL 抓取
+// URL 批次抓取
 btnFetchUrl.addEventListener('click', () => {
-  const url = urlInput.value.trim();
-  if (url) fetchAndConvert(url);
-});
+  const text = urlInput.value.trim();
+  if (!text) return;
 
-urlInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    const url = urlInput.value.trim();
-    if (url) fetchAndConvert(url);
+  // 隱藏之前的上限錯誤
+  urlLimitError.setAttribute('hidden', '');
+
+  const { entries, error } = parseUrls(text);
+
+  if (error) {
+    urlLimitError.textContent = error;
+    urlLimitError.removeAttribute('hidden');
+    return;
   }
+
+  if (entries.length === 0) return;
+
+  fetchAndConvertMultiple(entries);
 });
 
 // ── 離線狀態偵測 ──────────────────────────────────────────────────────────
