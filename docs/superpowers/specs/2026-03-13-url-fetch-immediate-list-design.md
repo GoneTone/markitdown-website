@@ -27,14 +27,19 @@ fetching → waiting → converting → done
 ### `fetchAndConvert` 改造
 
 1. 前端驗證 URL 格式（不變）
-2. 驗證通過後，立即建立 FileItem：`{ status: 'fetching', filename: url }`
-3. 立即執行：`fileQueue = [item]`、`showState(STATES.LIST)`、`renderFileList()`
-4. 清空 `urlInput`
-5. 背景非同步執行 `fetch /api/fetch-url`：
-   - **成功**：從 response headers 取得 Content-Type 和 X-Page-Title，產生真實檔名，更新 FileItem 的 `filename` 和 `arrayBuffer`，狀態改 `waiting`，呼叫 `updateFileItem` + `processNextFile`
-   - **HTTP 錯誤**：解析錯誤訊息，狀態改 `error`，`errorMessage` 寫入失敗原因，呼叫 `updateFileItem` + `updateListHeader`
-   - **網路錯誤**：狀態改 `error`，`errorMessage` = `抓取時發生錯誤：${err.message}`
-6. 移除 `finally` 中恢復上傳頁面按鈕狀態的邏輯（已切到列表頁，不需要）
+2. 建立 `AbortController`，存入模組變數 `currentFetchController`
+3. 驗證通過後，立即建立 FileItem：`{ status: 'fetching', filename: url }`
+4. 立即執行：`fileQueue = [item]`、`showState(STATES.LIST)`、`renderFileList()`
+5. 清空 `urlInput`
+6. 背景非同步執行 `fetch /api/fetch-url`（傳入 `signal: currentFetchController.signal`）：
+   - **成功**：檢查 item 仍在 `fileQueue` 中，從 response headers 取得 Content-Type 和 X-Page-Title，產生真實檔名，更新 FileItem 的 `filename` 和 `arrayBuffer`，狀態改 `waiting`，呼叫 `updateFileItem` + `processNextFile`
+   - **HTTP 錯誤**：檢查 item 仍在 `fileQueue` 中，解析錯誤訊息，狀態改 `error`，`errorMessage` 寫入失敗原因，呼叫 `updateFileItem` + `updateListHeader`
+   - **網路錯誤**：若為 `AbortError` 則靜默忽略；否則檢查 item 仍在 `fileQueue` 中，狀態改 `error`，`errorMessage` = `抓取時發生錯誤：${err.message}`
+7. 移除原有 `finally` 中恢復上傳頁面按鈕狀態的邏輯（已切到列表頁，不需要）
+
+### 取消機制
+
+新增模組變數 `let currentFetchController = null`。`fetchAndConvert` 開始時建立新的 `AbortController`，`resetToUpload` 中呼叫 `currentFetchController?.abort()` 以取消進行中的抓取。背景 fetch 回呼在更新 UI 前，先檢查 item 是否仍在 `fileQueue` 中，防止操作已被清空的佇列。
 
 ### `processNextFile` 修改
 
@@ -61,6 +66,24 @@ const isProcessing = fileQueue.some(
 ### URL 顯示
 
 檔名欄位暫時顯示完整 URL。現有的 `.file-item__name` CSS 已有 `text-overflow: ellipsis` 和 `title` 屬性處理長文字，hover 可看到完整 URL。
+
+### `resetToUpload` 修改
+
+新增取消進行中的 fetch：
+
+```js
+currentFetchController?.abort();
+currentFetchController = null;
+```
+
+確保上傳頁面控制項恢復正確狀態（現有邏輯已處理 `urlInput`、`btnFetchUrl`，需確認 `dropZone` 和 `fileInput` 也被正確恢復）：
+
+```js
+if (isEngineReady) {
+  dropZone.classList.remove('drop-zone--disabled');
+}
+fileInput.disabled = false;
+```
 
 ### 不變的部分
 
