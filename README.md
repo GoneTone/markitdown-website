@@ -82,7 +82,7 @@ docker compose -f docker-compose-dev.yml up
     └── converter.worker.js  Web Worker（背景執行緒）
             │
             ├── Pyodide 0.26.4（Python WASM）
-            ├── markitdown 0.1.4（純 Python wheel）
+            ├── markitdown（純 Python wheel）
             └── 依賴套件：pdfminer.six、python-docx、openpyxl、python-pptx…
 
 伺服器（Node.js + Headless Chrome）

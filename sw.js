@@ -4,15 +4,16 @@
  * 快取策略：
  *   UI 資源（HTML/CSS/JS/圖片）→ stale-while-revalidate
  *   /pyodide/**                 → cache-first（版本固定）
- *   /wheels/**                  → cache-first（版本固定）
+ *   /wheels/*.whl               → cache-first（版本固定）
+ *   /wheels/manifest.json       → stale-while-revalidate（隨部署更新）
  *
  * 更新方式：修改 CACHE_VERSION 即可強制所有客戶端清除舊快取。
  */
 
-const CACHE_VERSION = 'v8';
+const CACHE_VERSION = 'v9';
 
 // 靜態資源版本號：與 index.html 的 APP_VERSION 保持一致
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.3.1';
 
 const CACHE_NAMES = {
   ui:      `ui-${CACHE_VERSION}`,
@@ -84,7 +85,7 @@ self.addEventListener('fetch', (event) => {
 
   if (path.startsWith('/pyodide/')) {
     event.respondWith(cacheFirst(request, CACHE_NAMES.pyodide));
-  } else if (path.startsWith('/wheels/')) {
+  } else if (path.startsWith('/wheels/') && !path.endsWith('/manifest.json')) {
     event.respondWith(cacheFirst(request, CACHE_NAMES.wheels));
   } else {
     event.respondWith(staleWhileRevalidate(request, CACHE_NAMES.ui));
